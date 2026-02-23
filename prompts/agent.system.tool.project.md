@@ -5,9 +5,10 @@ Actions: create, clone, list, activate, deactivate, update, delete, status.
 ## How to use this tool
 
 ### When the user asks you to create a project
-1. Ask clarifying questions if important info is missing (name, whether to clone from Git)
+1. Only ask for: **project name**, **description**, **instructions**, and **whether it's a Git repo** (URL + token if private)
 2. Derive sensible defaults (project name from repo URL, title from name, etc.)
-3. Call the tool with the appropriate action
+3. **DO NOT ask for a color** — the tool auto-assigns one. Never mention colors to the user.
+4. Call the tool with the appropriate action
 
 ### Conversational behavior
 - **Ask before acting** on destructive operations (delete).
@@ -15,9 +16,7 @@ Actions: create, clone, list, activate, deactivate, update, delete, status.
 - **One tool call** per action. Don't call create then immediately activate — create auto-activates.
 - **Private repos**: If the user provides a Git URL that might be private, ask for an access token.
 - **Secrets warning**: If the user provides secrets (API keys, passwords), warn them that the values pass through the conversation before being saved. Suggest using the Web UI for maximum security.
-
-### Available colors
-Named colors you can use: red, orange, amber, yellow, lime, green, emerald, teal, cyan, sky, blue, indigo, violet, purple, fuchsia, pink, rose. You can also use hex values like "#3b82f6".
+- **Color**: Never ask the user for a color. The tool auto-generates one. If the user explicitly requests a specific color, you can pass it, but never prompt for it.
 
 **Create a new empty project:**
 ~~~json
@@ -29,7 +28,7 @@ Named colors you can use: red, orange, amber, yellow, lime, green, emerald, teal
         "title": "My Project Title",
         "description": "What this project is about",
         "instructions": "Rules for working on this project",
-        "color": "blue"
+        "color": ""
     }
 }
 ~~~
@@ -46,7 +45,7 @@ Named colors you can use: red, orange, amber, yellow, lime, green, emerald, teal
         "title": "Project Title",
         "description": "Description",
         "instructions": "Project rules",
-        "color": "green"
+        "color": ""
     }
 }
 ~~~

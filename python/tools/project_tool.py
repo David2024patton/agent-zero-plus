@@ -7,6 +7,7 @@ Wraps the existing python/helpers/projects.py logic.
 """
 
 import asyncio
+import random
 from python.helpers.tool import Tool, Response
 from python.helpers import projects
 from python.helpers.print_style import PrintStyle
@@ -333,9 +334,10 @@ class ProjectTool(Tool):
     # ------------------------------------------------------------------
 
     def _resolve_color(self, color_input: str) -> str:
-        """Resolve a color name or hex value."""
+        """Resolve a color name or hex value. Auto-assigns a random color if empty."""
         if not color_input:
-            return ""
+            # Auto-assign a random color from the palette
+            return random.choice(list(COLOR_MAP.values()))
         color_input = color_input.strip().lower()
         # Check if it's a named color
         if color_input in COLOR_MAP:
@@ -343,7 +345,8 @@ class ProjectTool(Tool):
         # Check if it's already a hex color
         if color_input.startswith("#"):
             return color_input
-        return ""
+        # Unknown name — auto-assign
+        return random.choice(list(COLOR_MAP.values()))
 
     def get_log_object(self):
         kvps = dict(self.args) if self.args else {}
