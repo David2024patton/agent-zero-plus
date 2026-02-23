@@ -219,11 +219,12 @@ class EmailChannelAdapter(ChannelAdapter):
                 f"2. If they ask a question (e.g. 'what's the latest AI news'), USE YOUR TOOLS to research it first, "
                 f"then compose a thorough, well-researched answer.\n"
                 f"3. Include REAL URLs/links (e.g. https://example.com/article) — search the web to find actual sources.\n"
-                f"4. Write in professional email format: greeting, detailed body paragraphs, sign-off.\n"
-                f"5. Use markdown formatting (headers, bold, bullet points, numbered lists) — it will be converted to HTML.\n"
-                f"6. Be substantive and detailed — emails should be thorough, not brief chat-style messages.\n"
-                f"7. Sign off as 'Agent Zero' or the configured agent name.\n\n"
-                f"After composing your response, use the email send tool to deliver it to {sender_email}."
+                f"4. Use the email_tool with the 'html' parameter and the branded HTML template from your instructions.\n"
+                f"5. ALL content (greeting, articles, links, summaries) must go in ONE SINGLE email.\n"
+                f"6. Call email_tool EXACTLY ONCE. After sending, use the 'response' tool to confirm in chat.\n"
+                f"7. NEVER send a second email to confirm or summarize. One email, that's it.\n"
+                f"8. Sign off as 'Agent Zero' or the configured agent name.\n\n"
+                f"Send the email to {sender_email} using the email_tool."
             )
             content = email_instructions
 

@@ -197,7 +197,12 @@ def initialize_plugins():
                     response = await task.result()
 
                     # Send the reply back via the channel
-                    if response:
+                    # NOTE: Skip auto-reply for email channel — the agent sends
+                    # its response directly via email_tool (as instructed in bot.py).
+                    # Auto-replying here would cause a DUPLICATE email with the
+                    # branded template. Only auto-reply for chat channels
+                    # (Discord, Telegram, Slack) where the bot must respond in-channel.
+                    if response and message.channel_id != "email":
                         await loader.send(
                             message.channel_id,
                             to=message.sender_id,
