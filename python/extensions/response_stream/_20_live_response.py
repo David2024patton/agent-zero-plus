@@ -27,10 +27,12 @@ class LiveResponse(Extension):
 
             # create log message and store it in loop data temporary params
             if "log_item_response" not in loop_data.params_temporary:
+                model_info = f"{self.agent.config.chat_model.provider}/{self.agent.config.chat_model.name}"
                 loop_data.params_temporary["log_item_response"] = (
                     self.agent.context.log.log(
                         type="response",
                         heading=f"icon://chat {self.agent.agent_name}: Responding",
+                        kvps={"model": model_info},
                     )
                 )
 

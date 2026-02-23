@@ -1,0 +1,532 @@
+<!-- OpenClaw Features Settings Panel -->
+<div class="settings-section" x-data="{ activeTab: 'lifecycle' }">
+    <h3 class="section-title">
+        <img src="/public/settings.svg" alt="" />
+        OpenClaw Features
+    </h3>
+    <p class="section-desc">
+        Advanced features adopted from the OpenClaw project. Configure lifecycle reactions,
+        sub-agents, DM access control, model overrides, browser sandbox, and cron webhooks.
+    </p>
+
+    <!-- Sub-tabs -->
+    <div class="sub-tabs">
+        <button @click="activeTab = 'lifecycle'" :class="{ active: activeTab === 'lifecycle' }">
+            🔄 Lifecycle
+        </button>
+        <button @click="activeTab = 'failover'" :class="{ active: activeTab === 'failover' }">
+            🔀 Failover Status
+        </button>
+        <button @click="activeTab = 'subagents'" :class="{ active: activeTab === 'subagents' }">
+            🤖 Sub-Agents
+        </button>
+        <button @click="activeTab = 'dm_policy'" :class="{ active: activeTab === 'dm_policy' }">
+            🔒 DM Policy
+        </button>
+        <button @click="activeTab = 'model_overrides'" :class="{ active: activeTab === 'model_overrides' }">
+            🧠 Model Overrides
+        </button>
+        <button @click="activeTab = 'sandbox'" :class="{ active: activeTab === 'sandbox' }">
+            📦 Sandbox
+        </button>
+        <button @click="activeTab = 'cron_webhook'" :class="{ active: activeTab === 'cron_webhook' }">
+            📡 Cron Webhooks
+        </button>
+        <button @click="activeTab = 'security'" :class="{ active: activeTab === 'security' }">
+            🔒 Security Audit
+        </button>
+    </div>
+
+    <!-- Lifecycle Reactions -->
+    <div x-show="activeTab === 'lifecycle'" class="tab-content">
+        <h4>Lifecycle Status Reactions</h4>
+        <p class="field-desc">
+            Show emoji reactions during processing phases: 📨 queued → 🤔 thinking → ⚙️ tool-use → ✅ done / ❌ error
+        </p>
+        <div class="setting-row">
+            <label>Enable Lifecycle Reactions</label>
+            <label class="toggle">
+                <input type="checkbox" x-model="$store.settings.lifecycle_reactions_enabled" />
+                <span class="toggler"></span>
+            </label>
+        </div>
+        <div class="setting-row">
+            <label>Emoji Set</label>
+            <select class="text-input" x-model="$store.settings.lifecycle_reactions_emoji_set">
+                <option value="default">Default (📨🤔⚙️✅❌)</option>
+                <option value="minimal">Minimal (⏳⚡✅❌)</option>
+                <option value="custom">Custom</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Failover Visibility -->
+    <div x-show="activeTab === 'failover'" class="tab-content">
+        <h4>Model Failover Visibility</h4>
+        <p class="field-desc">
+            Shows which model is currently active and displays failover events in real-time.
+        </p>
+        <div class="failover-status-panel" x-data="{ 
+            currentModel: $store.settings.chat_model_name || 'Not configured',
+            failoverEnabled: $store.settings.model_failover_enabled,
+            chain: ($store.settings.model_failover_providers || '').split(',').filter(p => p.trim()),
+            stats: { failovers: 0, lastEvent: null }
+        }">
+            <div class="status-card" :class="failoverEnabled ? 'active' : 'inactive'">
+                <div class="status-indicator">
+                    <span class="dot" :class="failoverEnabled ? 'green' : 'gray'"></span>
+                    <strong>Failover:</strong>
+                    <span x-text="failoverEnabled ? 'Active' : 'Disabled'"></span>
+                </div>
+                <div class="current-model">
+                    <span class="label">Active Model:</span>
+                    <code x-text="currentModel"></code>
+                </div>
+            </div>
+            <template x-if="chain.length > 0">
+                <div class="failover-chain">
+                    <span class="label">Failover Chain:</span>
+                    <div class="chain-items">
+                        <template x-for="(provider, idx) in chain" :key="idx">
+                            <span class="chain-item">
+                                <span x-text="provider.trim()"></span>
+                                <template x-if="idx < chain.length - 1">
+                                    <span class="chain-arrow">→</span>
+                                </template>
+                            </span>
+                        </template>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Sub-Agents -->
+    <div x-show="activeTab === 'subagents'" class="tab-content">
+        <h4>Nested Sub-Agent Spawning</h4>
+        <p class="field-desc">
+            Allow agents to spawn sub-agents from chat with configurable depth and count limits.
+        </p>
+        <div class="setting-row">
+            <label>Enable Sub-Agent Spawning</label>
+            <label class="toggle">
+                <input type="checkbox" x-model="$store.settings.subagent_enabled" />
+                <span class="toggler"></span>
+            </label>
+        </div>
+        <div class="setting-row">
+            <label>Max Spawn Depth</label>
+            <input type="number" class="text-input" min="1" max="5"
+                x-model.number="$store.settings.subagent_max_depth" />
+        </div>
+        <div class="setting-row">
+            <label>Max Children per Agent</label>
+            <input type="number" class="text-input" min="1" max="20"
+                x-model.number="$store.settings.subagent_max_children" />
+        </div>
+    </div>
+
+    <!-- DM Access Control -->
+    <div x-show="activeTab === 'dm_policy'" class="tab-content">
+        <h4>DM Access Control Policy</h4>
+        <p class="field-desc">
+            Unified policy for controlling who can send direct messages to the agent across all channels.
+        </p>
+        <div class="setting-row">
+            <label>DM Policy Mode</label>
+            <select class="text-input" x-model="$store.settings.dm_policy_mode">
+                <option value="all">Allow All</option>
+                <option value="owner_only">Owner Only</option>
+                <option value="allowlist">Allowlist</option>
+                <option value="none">Disable All DMs</option>
+            </select>
+        </div>
+        <div class="setting-row" x-show="$store.settings.dm_policy_mode === 'allowlist'">
+            <label>Allowed User IDs (comma-separated)</label>
+            <input type="text" class="text-input" x-model="$store.settings.dm_policy_allowlist"
+                placeholder="user_id_1, user_id_2, ..." />
+        </div>
+    </div>
+
+    <!-- Per-Channel Model Overrides -->
+    <div x-show="activeTab === 'model_overrides'" class="tab-content">
+        <h4>Per-Channel Model Overrides</h4>
+        <p class="field-desc">
+            Override the default chat model for specific channels. Leave empty to use the global model.
+        </p>
+        <div class="setting-row">
+            <label>Discord Model Override</label>
+            <input type="text" class="text-input" x-model="$store.settings.model_override_discord"
+                placeholder="e.g., anthropic/claude-sonnet-4.6" />
+        </div>
+        <div class="setting-row">
+            <label>Telegram Model Override</label>
+            <input type="text" class="text-input" x-model="$store.settings.model_override_telegram"
+                placeholder="e.g., openai/gpt-4o" />
+        </div>
+        <div class="setting-row">
+            <label>Slack Model Override</label>
+            <input type="text" class="text-input" x-model="$store.settings.model_override_slack"
+                placeholder="e.g., google/gemini-3-pro" />
+        </div>
+    </div>
+
+    <!-- Sandbox Browser Configuration -->
+    <div x-show="activeTab === 'sandbox'" class="tab-content">
+        <h4>Sandbox Browser Isolation</h4>
+        <p class="field-desc">
+            Configure isolated bind mounts for browser automation containers,
+            preventing web content from accessing the agent's workspace.
+        </p>
+        <div class="setting-row">
+            <label>Browser Bind Mounts</label>
+            <input type="text" class="text-input" x-model="$store.settings.sandbox_browser_binds"
+                placeholder="/tmp/browser:/tmp/browser" />
+        </div>
+        <div class="setting-row">
+            <label>Read-Only Browser Mounts</label>
+            <label class="toggle">
+                <input type="checkbox" x-model="$store.settings.sandbox_browser_read_only" />
+                <span class="toggler"></span>
+            </label>
+        </div>
+        <div class="setting-row">
+            <label>Browser Network Mode</label>
+            <select class="text-input" x-model="$store.settings.sandbox_browser_network">
+                <option value="bridge">Bridge (Default)</option>
+                <option value="host">Host</option>
+                <option value="none">None (Fully Isolated)</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Cron Webhook Delivery -->
+    <div x-show="activeTab === 'cron_webhook'" class="tab-content">
+        <h4>Cron Webhook Delivery</h4>
+        <p class="field-desc">
+            Deliver scheduled task results via HTTP webhooks to external services like n8n or Zapier.
+        </p>
+        <div class="setting-row">
+            <label>Enable Cron Webhooks</label>
+            <label class="toggle">
+                <input type="checkbox" x-model="$store.settings.cron_webhook_enabled" />
+                <span class="toggler"></span>
+            </label>
+        </div>
+        <div class="setting-row">
+            <label>Default Webhook URL</label>
+            <input type="text" class="text-input" x-model="$store.settings.cron_webhook_default_url"
+                placeholder="https://n8n.example.com/webhook/agent-cron" />
+        </div>
+        <div class="setting-row">
+            <label>Webhook Auth Token</label>
+            <input type="password" class="text-input" x-model="$store.settings.cron_webhook_auth_token"
+                placeholder="Bearer token for webhook authentication" />
+        </div>
+    </div>
+
+    <!-- Security Audit -->
+    <div x-show="activeTab === 'security'" class="tab-content">
+        <h4>Security Audit</h4>
+        <p class="field-desc">
+            Run an automated security scan on your Agent Zero configuration to identify vulnerabilities.
+        </p>
+        <div x-data="{ 
+            auditResult: null, 
+            loading: false,
+            async runAudit() {
+                this.loading = true;
+                try {
+                    const resp = await fetch('/api/security-audit', { method: 'POST' });
+                    this.auditResult = await resp.json();
+                } catch(e) {
+                    this.auditResult = { error: 'Failed to run audit: ' + e.message };
+                }
+                this.loading = false;
+            }
+        }">
+            <button class="btn btn-primary" @click="runAudit()" :disabled="loading">
+                <span x-show="!loading">🔍 Run Security Audit</span>
+                <span x-show="loading">⏳ Scanning...</span>
+            </button>
+
+            <template x-if="auditResult && !auditResult.error">
+                <div class="audit-results" style="margin-top: 1rem;">
+                    <div class="audit-score" :class="{
+                        'score-good': auditResult.score >= 8,
+                        'score-warn': auditResult.score >= 5 && auditResult.score < 8,
+                        'score-bad': auditResult.score < 5,
+                    }">
+                        <span class="score-number" x-text="auditResult.score + '/10'"></span>
+                        <span class="score-label">Security Score</span>
+                    </div>
+                    <div class="audit-summary">
+                        <span x-text="auditResult.total_findings + ' finding(s)'"></span>
+                        &mdash;
+                        <span class="critical" x-text="auditResult.critical + ' critical'"></span>,
+                        <span class="warning" x-text="auditResult.warnings + ' warning(s)'"></span>
+                    </div>
+                    <div class="findings-list">
+                        <template x-for="finding in auditResult.findings" :key="finding.id">
+                            <div class="finding" :class="'finding-' + finding.severity">
+                                <div class="finding-header">
+                                    <span class="finding-severity" x-text="finding.severity.toUpperCase()"></span>
+                                    <span class="finding-id" x-text="'[' + finding.id + ']'"></span>
+                                    <span class="finding-title" x-text="finding.title"></span>
+                                </div>
+                                <p class="finding-desc" x-text="finding.description"></p>
+                                <p class="finding-rec">→ <span x-text="finding.recommendation"></span></p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+            <template x-if="auditResult && auditResult.error">
+                <div class="audit-error" x-text="auditResult.error"
+                    style="color: var(--error-color); margin-top: 1rem;"></div>
+            </template>
+        </div>
+    </div>
+</div>
+
+<style>
+    .sub-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-color, #333);
+    }
+
+    .sub-tabs button {
+        padding: 0.4rem 0.75rem;
+        border: 1px solid var(--border-color, #444);
+        border-radius: 0.5rem;
+        background: transparent;
+        color: var(--text-color, #ccc);
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+    }
+
+    .sub-tabs button:hover {
+        background: var(--hover-bg, rgba(255, 255, 255, 0.05));
+    }
+
+    .sub-tabs button.active {
+        background: var(--accent-color, #4a9eff);
+        color: #fff;
+        border-color: var(--accent-color, #4a9eff);
+    }
+
+    .tab-content {
+        padding: 0.5rem 0;
+    }
+
+    .setting-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--border-color-subtle, rgba(255, 255, 255, 0.05));
+    }
+
+    .setting-row label:first-child {
+        font-weight: 500;
+    }
+
+    .field-desc {
+        font-size: 0.85rem;
+        color: var(--text-muted, #888);
+        margin-bottom: 1rem;
+    }
+
+    /* Failover status panel */
+    .status-card {
+        padding: 1rem;
+        border-radius: 0.75rem;
+        background: var(--card-bg, rgba(255, 255, 255, 0.03));
+        border: 1px solid var(--border-color, #333);
+        margin-bottom: 1rem;
+    }
+
+    .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .dot.green {
+        background: #22c55e;
+        box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+    }
+
+    .dot.gray {
+        background: #666;
+    }
+
+    .current-model {
+        margin-top: 0.5rem;
+    }
+
+    .current-model code {
+        background: var(--code-bg, rgba(255, 255, 255, 0.1));
+        padding: 0.2rem 0.5rem;
+        border-radius: 0.25rem;
+    }
+
+    .failover-chain {
+        margin-top: 0.75rem;
+    }
+
+    .chain-items {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+        margin-top: 0.5rem;
+    }
+
+    .chain-item {
+        padding: 0.25rem 0.5rem;
+        background: var(--card-bg, rgba(255, 255, 255, 0.05));
+        border-radius: 0.25rem;
+        font-size: 0.85rem;
+    }
+
+    .chain-arrow {
+        margin: 0 0.25rem;
+        color: var(--accent-color, #4a9eff);
+    }
+
+    /* Security audit */
+    .btn-primary {
+        padding: 0.5rem 1.5rem;
+        background: var(--accent-color, #4a9eff);
+        color: #fff;
+        border: none;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+
+    .btn-primary:hover {
+        opacity: 0.9;
+    }
+
+    .btn-primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .audit-score {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 1rem 2rem;
+        border-radius: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .score-good {
+        background: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .score-warn {
+        background: rgba(234, 179, 8, 0.1);
+        border: 1px solid rgba(234, 179, 8, 0.3);
+    }
+
+    .score-bad {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .score-number {
+        font-size: 2rem;
+        font-weight: 700;
+    }
+
+    .score-label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .finding {
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        border-radius: 0.5rem;
+        border-left: 3px solid;
+    }
+
+    .finding-critical {
+        border-color: #ef4444;
+        background: rgba(239, 68, 68, 0.05);
+    }
+
+    .finding-warning {
+        border-color: #eab308;
+        background: rgba(234, 179, 8, 0.05);
+    }
+
+    .finding-info {
+        border-color: #3b82f6;
+        background: rgba(59, 130, 246, 0.05);
+    }
+
+    .finding-header {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        font-weight: 500;
+    }
+
+    .finding-severity {
+        font-size: 0.75rem;
+        padding: 0.1rem 0.4rem;
+        border-radius: 0.25rem;
+    }
+
+    .finding-critical .finding-severity {
+        background: #ef4444;
+        color: #fff;
+    }
+
+    .finding-warning .finding-severity {
+        background: #eab308;
+        color: #000;
+    }
+
+    .finding-desc {
+        font-size: 0.85rem;
+        margin: 0.5rem 0 0.25rem;
+        color: var(--text-muted);
+    }
+
+    .finding-rec {
+        font-size: 0.85rem;
+        color: var(--accent-color);
+    }
+
+    .audit-summary {
+        margin-bottom: 1rem;
+    }
+
+    .critical {
+        color: #ef4444;
+    }
+
+    .warning {
+        color: #eab308;
+    }
+</style>

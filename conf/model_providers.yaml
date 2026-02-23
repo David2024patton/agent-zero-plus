@@ -59,6 +59,9 @@ chat:
   moonshot:
     name: Moonshot AI
     litellm_provider: moonshot
+  nvidia:
+    name: NVIDIA
+    litellm_provider: nvidia_nim
   ollama:
     name: Ollama
     litellm_provider: ollama
@@ -112,12 +115,18 @@ embedding:
   google:
     name: Google
     litellm_provider: gemini
+  groq:
+    name: Groq
+    litellm_provider: groq
   lm_studio:
     name: LM Studio
     litellm_provider: lm_studio
   mistral:
     name: Mistral AI
     litellm_provider: mistral
+  nvidia:
+    name: NVIDIA
+    litellm_provider: nvidia_nim
   ollama:
     name: Ollama
     litellm_provider: ollama
@@ -139,6 +148,10 @@ embedding:
       extra_headers:
         "HTTP-Referer": "https://agent-zero.ai/"
         "X-Title": "Agent Zero"
+  sambanova:
+    name: Sambanova
+    litellm_provider: sambanova
   other:
     name: Other OpenAI compatible
     litellm_provider: openai
+

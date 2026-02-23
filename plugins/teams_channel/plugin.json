@@ -1,0 +1,46 @@
+{
+    "id": "teams_channel",
+    "name": "Microsoft Teams",
+    "description": "Connect Agent Zero to Microsoft Teams. Responds to messages, @mentions, and 1:1 chats.",
+    "version": "1.0.0",
+    "type": "channel",
+    "entry": "__init__.py",
+    "config": {
+        "app_id": {
+            "label": "App ID",
+            "description": "Microsoft Teams Bot App ID (from Azure Bot registration)",
+            "type": "text",
+            "default": "",
+            "sensitive": false
+        },
+        "app_password": {
+            "label": "App Password",
+            "description": "Microsoft Teams Bot App Password / Client Secret",
+            "type": "password",
+            "env": "TEAMS_APP_PASSWORD",
+            "default": "",
+            "sensitive": true
+        },
+        "tenant_id": {
+            "label": "Tenant ID",
+            "description": "Azure AD Tenant ID (leave empty for multi-tenant)",
+            "type": "text",
+            "default": "",
+            "sensitive": false
+        },
+        "respond_to_personal": {
+            "label": "Respond to 1:1 Chats",
+            "description": "Allow the bot to respond in personal/1:1 conversations",
+            "type": "switch",
+            "default": true,
+            "sensitive": false
+        },
+        "respond_to_channels": {
+            "label": "Respond in Channels",
+            "description": "Allow the bot to respond when @mentioned in team channels",
+            "type": "switch",
+            "default": true,
+            "sensitive": false
+        }
+    }
+}

@@ -51,6 +51,7 @@ Type = Literal[
     "info",
     "progress",
     "response",
+    "swarm",
     "tool",
     "mcp",
     "input",

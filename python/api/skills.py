@@ -1,5 +1,10 @@
+import json
+import os
+
 from python.helpers.api import ApiHandler, Input, Output, Request, Response
 from python.helpers import runtime, skills, projects, files
+
+AUTO_LOAD_FILE = files.get_abs_path("usr", "auto_load_skills.json")
 
 
 class Skills(ApiHandler):
@@ -11,6 +16,10 @@ class Skills(ApiHandler):
                 data = self.list_skills(input)
             elif action == "delete":
                 data = self.delete_skill(input)
+            elif action == "get_auto_load":
+                data = self.get_auto_load()
+            elif action == "set_auto_load":
+                data = self.set_auto_load(input)
             else:
                 raise Exception("Invalid action")
 
@@ -70,3 +79,36 @@ class Skills(ApiHandler):
 
         skills.delete_skill(skill_path)
         return {"ok": True, "skill_path": skill_path}
+
+    # ── auto-load helpers ────────────────────────────────────────
+    @staticmethod
+    def _read_auto_load() -> list[str]:
+        """Read the list of auto-load skill names from the JSON file."""
+        if not os.path.isfile(AUTO_LOAD_FILE):
+            return []
+        try:
+            with open(AUTO_LOAD_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, list):
+                return [s for s in data if isinstance(s, str) and s.strip()]
+            return []
+        except Exception:
+            return []
+
+    @staticmethod
+    def _write_auto_load(names: list[str]) -> None:
+        """Write the list of auto-load skill names to the JSON file."""
+        os.makedirs(os.path.dirname(AUTO_LOAD_FILE), exist_ok=True)
+        with open(AUTO_LOAD_FILE, "w", encoding="utf-8") as f:
+            json.dump(names, f, indent=2)
+
+    def get_auto_load(self) -> dict:
+        return {"auto_load_skills": self._read_auto_load()}
+
+    def set_auto_load(self, input: Input) -> dict:
+        raw = input.get("auto_load_skills")
+        if not isinstance(raw, list):
+            raise Exception("auto_load_skills must be a list of strings")
+        clean = [s.strip() for s in raw if isinstance(s, str) and s.strip()]
+        self._write_auto_load(clean)
+        return {"auto_load_skills": clean}

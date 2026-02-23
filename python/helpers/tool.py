@@ -57,7 +57,9 @@ class Tool:
             heading = f"icon://construction {self.agent.agent_name}: Using tool '{self.name}:{self.method}'"
         else:
             heading = f"icon://construction {self.agent.agent_name}: Using tool '{self.name}'"
-        return self.agent.context.log.log(type="tool", heading=heading, content="", kvps=self.args, _tool_name=self.name)
+        kvps = dict(self.args) if self.args else {}
+        kvps["model"] = f"{self.agent.config.chat_model.provider}/{self.agent.config.chat_model.name}"
+        return self.agent.context.log.log(type="tool", heading=heading, content="", kvps=kvps, _tool_name=self.name)
 
     def nice_key(self, key:str):
         words = key.split('_')

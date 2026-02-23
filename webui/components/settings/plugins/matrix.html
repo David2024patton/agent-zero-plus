@@ -1,0 +1,100 @@
+<html>
+
+<head>
+    <title>Matrix Plugin</title>
+</head>
+
+<body>
+    <div x-data>
+        <template x-if="$store.settings">
+            <div>
+                <div class="section-title">Matrix / Element</div>
+                <div class="section-description">
+                    Connect Agent Zero to Matrix/Element. Decentralized, self-hosted messaging with E2EE support.
+                    Requires <code>matrix-nio</code>.
+                    <br><br>
+                    📖 <strong>Setup Guide:</strong>
+                    Create a bot account on your Matrix homeserver, then generate an access token via
+                    <a href="https://element.io" target="_blank" rel="noopener">Element</a> or the
+                    <code>/_matrix/client/r0/login</code> API endpoint.
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Enable Matrix Plugin</div>
+                        <div class="field-description">Start the Matrix bot when Agent Zero launches.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="$store.settings.settings.plugin_matrix_enabled" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Homeserver URL</div>
+                        <div class="field-description">Matrix homeserver URL (e.g. https://matrix.org).</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="text" class="text-input"
+                            x-model="$store.settings.settings.plugin_matrix_homeserver_url"
+                            placeholder="https://matrix.org" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Bot User ID</div>
+                        <div class="field-description">Full Matrix user ID (e.g. @mybot:matrix.org).</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="text" class="text-input" x-model="$store.settings.settings.plugin_matrix_user_id"
+                            placeholder="@mybot:matrix.org" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Access Token</div>
+                        <div class="field-description">Matrix access token for the bot account.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="password" class="text-input"
+                            x-model="$store.settings.settings.plugin_matrix_access_token"
+                            placeholder="Enter Matrix access token" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Allowed Room IDs</div>
+                        <div class="field-description">Comma-separated room IDs the bot can respond in. Leave empty for
+                            all.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="text" class="text-input"
+                            x-model="$store.settings.settings.plugin_matrix_allowed_rooms"
+                            placeholder="!roomid:matrix.org, !other:matrix.org" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Respond to DMs</div>
+                        <div class="field-description">Allow the bot to respond to direct messages.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="$store.settings.settings.plugin_matrix_respond_dms" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+</body>
+
+</html>

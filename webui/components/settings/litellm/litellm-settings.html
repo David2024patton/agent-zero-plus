@@ -1,0 +1,901 @@
+<html>
+
+<head>
+    <title>LiteLLM Settings</title>
+</head>
+
+<body>
+    <div x-data="litellmSettings()">
+        <template x-if="$store.settings.settings">
+            <div>
+                <div class="section-title">LiteLLM Configuration</div>
+                <div class="section-description">
+                    Configure global parameters passed to <a href="https://docs.litellm.ai/docs/"
+                        target="_blank">LiteLLM</a> for all model providers. These settings apply to every LLM call
+                    unless overridden by per-model kwargs.
+                </div>
+
+                <!-- ================== SECTION: GENERAL ================== -->
+                <div x-show="$store.settings.activeSubTab === 'general'" x-transition>
+                    <div class="section-title" style="font-size: 0.95em; margin-top: 1em; opacity: 0.8;">Timeouts</div>
+
+                    <div class="field">
+                        <div class="field-label">
+                            <div class="field-title">Request Timeout (seconds)</div>
+                            <div class="field-description">Max seconds to wait for a complete LLM response. Set to 0
+                                for no timeout.</div>
+                        </div>
+                        <div class="field-control">
+                            <input type="number" min="0" step="1" :value="getNum('timeout', '')"
+                                @input="setNum('timeout', $event.target.value)" placeholder="600" />
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <div class="field-label">
+                            <div class="field-title">Stream Timeout (seconds)</div>
+                            <div class="field-description">Max seconds to wait between streamed chunks.</div>
+                        </div>
+                        <div class="field-control">
+                            <input type="number" min="0" step="1" :value="getNum('stream_timeout', '')"
+                                @input="setNum('stream_timeout', $event.target.value)" placeholder="30" />
+                        </div>
+                    </div>
+
+                    <div class="section-title" style="font-size: 0.95em; margin-top: 1.5em; opacity: 0.8;">Retries
+                    </div>
+
+                    <div class="field">
+                        <div class="field-label">
+                            <div class="field-title">Max Retries</div>
+                            <div class="field-description">Number of times to retry a failed LLM call (rate limits,
+                                timeouts).</div>
+                        </div>
+                        <div class="field-control">
+                            <input type="number" min="0" step="1" :value="getNum('num_retries', '')"
+                                @input="setNum('num_retries', $event.target.value)" placeholder="3" />
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <div class="field-label">
+                            <div class="field-title">Retry Delay (seconds)</div>
+                            <div class="field-description">Seconds to wait between retries.</div>
+                        </div>
+                        <div class="field-control">
+                            <input type="number" min="0" step="0.5" :value="getNum('retry_delay', '')"
+                                @input="setNum('retry_delay', $event.target.value)" placeholder="1" />
+                        </div>
+                    </div>
+
+                    <div class="section-title" style="font-size: 0.95em; margin-top: 1.5em; opacity: 0.8;">Behavior
+                    </div>
+
+                    <div class="field">
+                        <div class="field-label">
+                            <div class="field-title">Drop Unmapped Parameters</div>
+                            <div class="field-description">Silently drop parameters not supported by a provider instead
+                                of raising errors.</div>
+                        </div>
+                        <div class="field-control">
+                            <label class="toggle">
+                                <input type="checkbox" :checked="getBool('drop_params')"
+                                    @change="setBool('drop_params', $event.target.checked)" />
+                                <span class="toggler"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <div class="field-label">
+                            <div class="field-title">Force IPv4</div>
+                            <div class="field-description">Force all requests to use IPv4. Useful when IPv6 causes
+                                connection issues.</div>
+                        </div>
+                        <div class="field-control">
+                            <label class="toggle">
+                                <input type="checkbox" :checked="getBool('force_ipv4')"
+                                    @change="setBool('force_ipv4', $event.target.checked)" />
+                                <span class="toggler"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================== SECTION: API KEYS ================== -->
+                <div x-show="$store.settings.activeSubTab === 'litellm-api-keys'" x-transition>
+                    <div class="section-title" style="font-size: 0.95em; margin-top: 1em; opacity: 0.8;">Global LiteLLM
+                        Overrides</div>
+                    <div class="section-description" style="font-size: 0.8em; opacity: 0.7; margin-bottom: 1em;">
+                        These override provider-specific keys set in External Services. <code>api_key</code> is checked
+                        for ALL providers as a fallback.
+                    </div>
+
+                    <div class="field">
+                        <div class="field-label">
+                            <div class="field-title">Global API Key</div>
+                            <div class="field-description">Fallback API key checked for all providers
+                                (<code>litellm.api_key</code>).</div>
+                        </div>
+                        <div class="field-control">
+                            <input type="password" :value="getStr('api_key')"
+                                @input="setStr('api_key', $event.target.value)" placeholder="sk-..." />
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <div class="field-label">
+                            <div class="field-title">Global API Base</div>
+                            <div class="field-description">Override the base URL for all providers
+                                (<code>litellm.api_base</code>).</div>
+                        </div>
+                        <div class="field-control">
+                            <input type="text" :value="getStr('api_base')"
+                                @input="setStr('api_base', $event.target.value)"
+                                placeholder="https://your-proxy.example.com/v1" />
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <div class="field-label">
+                            <div class="field-title">API Version</div>
+                            <div class="field-description">Global API version string
+                                (<code>litellm.api_version</code>). Primarily for Azure.</div>
+                        </div>
+                        <div class="field-control">
+                            <input type="text" :value="getStr('api_version')"
+                                @input="setStr('api_version', $event.target.value)" placeholder="2023-05-15" />
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <div class="field-label">
+                            <div class="field-title">Organization</div>
+                            <div class="field-description">OpenAI organization ID
+                                (<code>litellm.organization</code>).</div>
+                        </div>
+                        <div class="field-control">
+                            <input type="text" :value="getStr('organization')"
+                                @input="setStr('organization', $event.target.value)" placeholder="org-..." />
+                        </div>
+                    </div>
+
+                    <div class="section-title" style="font-size: 0.95em; margin-top: 1.5em; opacity: 0.8;">Azure
+                        OpenAI</div>
+
+                    <div class="field">
+                        <div class="field-label">
+                            <div class="field-title">Azure API Base</div>
+                            <div class="field-description">Azure OpenAI endpoint URL.</div>
+                        </div>
+                        <div class="field-control">
+                            <input type="text" :value="getStr('azure_api_base')"
+                                @input="setStr('azure_api_base', $event.target.value)"
+                                placeholder="https://your-resource.openai.azure.com/" />
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <div class="field-label">
+                            <div class="field-title">Azure API Version</div>
+                            <div class="field-description">Azure API version.</div>
+                        </div>
+                        <div class="field-control">
+                            <input type="text" :value="getStr('azure_api_version')"
+                                @input="setStr('azure_api_version', $event.target.value)" placeholder="2024-02-01" />
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <div class="field-label">
+                            <div class="field-title">Azure API Type</div>
+                            <div class="field-description">Azure API type (usually "azure").</div>
+                        </div>
+                        <div class="field-control">
+                            <input type="text" :value="getStr('azure_api_type')"
+                                @input="setStr('azure_api_type', $event.target.value)" placeholder="azure" />
+                        </div>
+                    </div>
+
+                    <div class="section-title" style="font-size: 0.95em; margin-top: 1.5em; opacity: 0.8;">Google
+                        Vertex AI</div>
+
+                    <div class="field">
+                        <div class="field-label">
+                            <div class="field-title">Vertex Project</div>
+                            <div class="field-description">GCP project ID for Vertex AI.</div>
+                        </div>
+                        <div class="field-control">
+                            <input type="text" :value="getStr('vertex_project')"
+                                @input="setStr('vertex_project', $event.target.value)" placeholder="my-gcp-project" />
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <div class="field-label">
+                            <div class="field-title">Vertex Location</div>
+                            <div class="field-description">GCP region for Vertex AI.</div>
+                        </div>
+                        <div class="field-control">
+                            <input type="text" :value="getStr('vertex_location')"
+                                @input="setStr('vertex_location', $event.target.value)" placeholder="us-central1" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================== SECTION: CACHING ================== -->
+                <div x-show="$store.settings.activeSubTab === 'caching'" x-transition>
+                    <div class="section-title" style="font-size: 0.95em; margin-top: 1em; opacity: 0.8;">Cache
+                        Settings</div>
+                    <div class="section-description" style="font-size: 0.8em; opacity: 0.7; margin-bottom: 1em;">
+                        Cache identical LLM requests to reduce API calls and cost. See <a
+                            href="https://docs.litellm.ai/docs/caching/all_caches" target="_blank">LiteLLM
+                            Caching</a>.
+                    </div>
+
+                    <div class="field">
+                        <div class="field-label">
+                            <div class="field-title">Enable Caching</div>
+                            <div class="field-description">Turn on response caching for LLM calls.</div>
+                        </div>
+                        <div class="field-control">
+                            <label class="toggle">
+                                <input type="checkbox" :checked="getBool('cache')"
+                                    @change="setBool('cache', $event.target.checked)" />
+                                <span class="toggler"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div x-show="getBool('cache')">
+                        <div class="field">
+                            <div class="field-label">
+                                <div class="field-title">Cache Type</div>
+                                <div class="field-description">Backend storage for cached responses.</div>
+                            </div>
+                            <div class="field-control">
+                                <select :value="getStr('cache_type') || 'local'"
+                                    @change="setStr('cache_type', $event.target.value)">
+                                    <option value="local">In-Memory (local)</option>
+                                    <option value="redis">Redis</option>
+                                    <option value="redis-semantic">Redis Semantic</option>
+                                    <option value="s3">S3 Bucket</option>
+                                    <option value="gcs">GCS Bucket</option>
+                                    <option value="disk">Disk</option>
+                                    <option value="qdrant-semantic">Qdrant Semantic</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <div class="field-label">
+                                <div class="field-title">TTL (seconds)</div>
+                                <div class="field-description">Time-to-live for cached entries. Leave empty for no
+                                    expiry.</div>
+                            </div>
+                            <div class="field-control">
+                                <input type="number" min="0" step="1" :value="getNum('cache_ttl', '')"
+                                    @input="setNum('cache_ttl', $event.target.value)" placeholder="3600" />
+                            </div>
+                        </div>
+
+                        <!-- Redis fields -->
+                        <template x-if="getStr('cache_type') === 'redis' || getStr('cache_type') === 'redis-semantic'">
+                            <div>
+                                <div class="section-title" style="font-size: 0.9em; margin-top: 1.2em; opacity: 0.7;">
+                                    Redis
+                                    Configuration</div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Host</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="text" :value="getStr('redis_host')"
+                                            @input="setStr('redis_host', $event.target.value)"
+                                            placeholder="localhost" />
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Port</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="number" min="1" :value="getNum('redis_port', '')"
+                                            @input="setNum('redis_port', $event.target.value)" placeholder="6379" />
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Password</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="password" :value="getStr('redis_password')"
+                                            @input="setStr('redis_password', $event.target.value)" placeholder="" />
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Namespace</div>
+                                        <div class="field-description">Optional prefix for all cache keys.</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="text" :value="getStr('redis_namespace')"
+                                            @input="setStr('redis_namespace', $event.target.value)"
+                                            placeholder="litellm:" />
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Redis TTL (seconds)</div>
+                                        <div class="field-description">Separate TTL for Redis entries.</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="number" min="0" :value="getNum('redis_ttl', '')"
+                                            @input="setNum('redis_ttl', $event.target.value)" placeholder="" />
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Flush Size</div>
+                                        <div class="field-description">Number of items before auto-flush.</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="number" min="0" :value="getNum('redis_flush_size', '')"
+                                            @input="setNum('redis_flush_size', $event.target.value)" placeholder="" />
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">SSL</div>
+                                        <div class="field-description">Enable SSL for Redis connection.</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <label class="toggle">
+                                            <input type="checkbox" :checked="getBool('redis_ssl')"
+                                                @change="setBool('redis_ssl', $event.target.checked)" />
+                                            <span class="toggler"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Redis Semantic extra fields -->
+                        <template x-if="getStr('cache_type') === 'redis-semantic'">
+                            <div>
+                                <div class="section-title" style="font-size: 0.9em; margin-top: 1.2em; opacity: 0.7;">
+                                    Semantic
+                                    Cache</div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Similarity Threshold</div>
+                                        <div class="field-description">0 = no similarity, 1 = exact match. e.g. 0.8 =
+                                            80% similarity.</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="number" min="0" max="1" step="0.05"
+                                            :value="getNum('similarity_threshold', '')"
+                                            @input="setNum('similarity_threshold', $event.target.value)"
+                                            placeholder="0.8" />
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Embedding Model</div>
+                                        <div class="field-description">Model used to create embeddings for semantic
+                                            matching.</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="text" :value="getStr('redis_semantic_cache_embedding_model')"
+                                            @input="setStr('redis_semantic_cache_embedding_model', $event.target.value)"
+                                            placeholder="text-embedding-ada-002" />
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- S3 fields -->
+                        <template x-if="getStr('cache_type') === 's3'">
+                            <div>
+                                <div class="section-title" style="font-size: 0.9em; margin-top: 1.2em; opacity: 0.7;">S3
+                                    Bucket
+                                    Configuration</div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Bucket Name</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="text" :value="getStr('s3_bucket_name')"
+                                            @input="setStr('s3_bucket_name', $event.target.value)"
+                                            placeholder="cache-bucket-litellm" />
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Region</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="text" :value="getStr('s3_region_name')"
+                                            @input="setStr('s3_region_name', $event.target.value)"
+                                            placeholder="us-west-2" />
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Path Prefix</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="text" :value="getStr('s3_path')"
+                                            @input="setStr('s3_path', $event.target.value)"
+                                            placeholder="litellm-cache/" />
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Endpoint URL</div>
+                                        <div class="field-description">Custom S3 endpoint (for MinIO, R2, etc.).</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="text" :value="getStr('s3_endpoint_url')"
+                                            @input="setStr('s3_endpoint_url', $event.target.value)"
+                                            placeholder="https://s3.amazonaws.com" />
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">AWS Access Key</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="password" :value="getStr('s3_aws_access_key_id')"
+                                            @input="setStr('s3_aws_access_key_id', $event.target.value)"
+                                            placeholder="AKI..." />
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">AWS Secret Key</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="password" :value="getStr('s3_aws_secret_access_key')"
+                                            @input="setStr('s3_aws_secret_access_key', $event.target.value)"
+                                            placeholder="" />
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- GCS fields -->
+                        <template x-if="getStr('cache_type') === 'gcs'">
+                            <div>
+                                <div class="section-title" style="font-size: 0.9em; margin-top: 1.2em; opacity: 0.7;">
+                                    GCS Bucket
+                                    Configuration</div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Bucket Name</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="text" :value="getStr('gcs_bucket_name')"
+                                            @input="setStr('gcs_bucket_name', $event.target.value)"
+                                            placeholder="my-cache-bucket" />
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Service Account Path</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="text" :value="getStr('gcs_path_service_account')"
+                                            @input="setStr('gcs_path_service_account', $event.target.value)"
+                                            placeholder="/path/to/service_account.json" />
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Disk fields -->
+                        <template x-if="getStr('cache_type') === 'disk'">
+                            <div>
+                                <div class="section-title" style="font-size: 0.9em; margin-top: 1.2em; opacity: 0.7;">
+                                    Disk Cache
+                                    Configuration</div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Cache Directory</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="text" :value="getStr('disk_cache_dir')"
+                                            @input="setStr('disk_cache_dir', $event.target.value)"
+                                            placeholder="/tmp/litellm_cache" />
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Qdrant Semantic fields -->
+                        <template x-if="getStr('cache_type') === 'qdrant-semantic'">
+                            <div>
+                                <div class="section-title" style="font-size: 0.9em; margin-top: 1.2em; opacity: 0.7;">
+                                    Qdrant Semantic
+                                    Cache</div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Qdrant API Base</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="text" :value="getStr('qdrant_api_base')"
+                                            @input="setStr('qdrant_api_base', $event.target.value)"
+                                            placeholder="https://your-cluster.qdrant.io" />
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Qdrant API Key</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="password" :value="getStr('qdrant_api_key')"
+                                            @input="setStr('qdrant_api_key', $event.target.value)" placeholder="" />
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Collection Name</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="text" :value="getStr('qdrant_collection_name')"
+                                            @input="setStr('qdrant_collection_name', $event.target.value)"
+                                            placeholder="litellm_cache" />
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Similarity Threshold</div>
+                                        <div class="field-description">0 = no similarity, 1 = exact match.</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="number" min="0" max="1" step="0.05"
+                                            :value="getNum('qdrant_similarity_threshold', '')"
+                                            @input="setNum('qdrant_similarity_threshold', $event.target.value)"
+                                            placeholder="0.7" />
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Quantization</div>
+                                        <div class="field-description">Quantization type for the Qdrant index.</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <select :value="getStr('qdrant_quantization_config') || ''"
+                                            @change="setStr('qdrant_quantization_config', $event.target.value)">
+                                            <option value="">None</option>
+                                            <option value="binary">Binary</option>
+                                            <option value="product">Product</option>
+                                            <option value="scalar">Scalar</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Embedding Model</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="text" :value="getStr('qdrant_semantic_cache_embedding_model')"
+                                            @input="setStr('qdrant_semantic_cache_embedding_model', $event.target.value)"
+                                            placeholder="text-embedding-ada-002" />
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- ================== SECTION: PROXY AUTH ================== -->
+                <div x-show="$store.settings.activeSubTab === 'proxy-auth'" x-transition>
+                    <div class="section-title" style="font-size: 0.95em; margin-top: 1em; opacity: 0.8;">Proxy
+                        Authentication</div>
+                    <div class="section-description" style="font-size: 0.8em; opacity: 0.7; margin-bottom: 1em;">
+                        Configure OAuth2/JWT auto-refresh for LiteLLM Proxy. See <a
+                            href="https://docs.litellm.ai/docs/proxy_auth" target="_blank">Proxy Auth docs</a>.
+                    </div>
+
+                    <div class="field">
+                        <div class="field-label">
+                            <div class="field-title">Use LiteLLM Proxy</div>
+                            <div class="field-description">Route all calls through a LiteLLM Proxy instance.</div>
+                        </div>
+                        <div class="field-control">
+                            <label class="toggle">
+                                <input type="checkbox" :checked="getBool('use_litellm_proxy')"
+                                    @change="setBool('use_litellm_proxy', $event.target.checked)" />
+                                <span class="toggler"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div x-show="getBool('use_litellm_proxy')">
+                        <div class="field">
+                            <div class="field-label">
+                                <div class="field-title">Proxy URL</div>
+                                <div class="field-description">Base URL of your LiteLLM Proxy server.</div>
+                            </div>
+                            <div class="field-control">
+                                <input type="text" :value="getStr('proxy_url')"
+                                    @input="setStr('proxy_url', $event.target.value)"
+                                    placeholder="http://localhost:4000" />
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <div class="field-label">
+                                <div class="field-title">Auth Method</div>
+                            </div>
+                            <div class="field-control">
+                                <select :value="getStr('proxy_auth_method') || 'none'"
+                                    @change="setStr('proxy_auth_method', $event.target.value)">
+                                    <option value="none">None (API Key only)</option>
+                                    <option value="azure_ad">Azure AD</option>
+                                    <option value="oauth2">Generic OAuth2 (Okta, Auth0, Keycloak)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Azure AD fields -->
+                        <template x-if="getStr('proxy_auth_method') === 'azure_ad'">
+                            <div>
+                                <div class="section-title" style="font-size: 0.9em; margin-top: 1.2em; opacity: 0.7;">
+                                    Azure AD
+                                    Credentials</div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Tenant ID</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="text" :value="getStr('azure_tenant_id')"
+                                            @input="setStr('azure_tenant_id', $event.target.value)" placeholder="" />
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Client ID</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="text" :value="getStr('azure_client_id')"
+                                            @input="setStr('azure_client_id', $event.target.value)" placeholder="" />
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Client Secret</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="password" :value="getStr('azure_client_secret')"
+                                            @input="setStr('azure_client_secret', $event.target.value)"
+                                            placeholder="" />
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Scope</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="text" :value="getStr('azure_scope')"
+                                            @input="setStr('azure_scope', $event.target.value)"
+                                            placeholder="api://your-app-id/.default" />
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Generic OAuth2 fields -->
+                        <template x-if="getStr('proxy_auth_method') === 'oauth2'">
+                            <div>
+                                <div class="section-title" style="font-size: 0.9em; margin-top: 1.2em; opacity: 0.7;">
+                                    OAuth2
+                                    Credentials</div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Token URL</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="text" :value="getStr('oauth2_token_url')"
+                                            @input="setStr('oauth2_token_url', $event.target.value)"
+                                            placeholder="https://your-idp.com/oauth/token" />
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Client ID</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="text" :value="getStr('oauth2_client_id')"
+                                            @input="setStr('oauth2_client_id', $event.target.value)" placeholder="" />
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Client Secret</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="password" :value="getStr('oauth2_client_secret')"
+                                            @input="setStr('oauth2_client_secret', $event.target.value)"
+                                            placeholder="" />
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="field-label">
+                                        <div class="field-title">Scope</div>
+                                    </div>
+                                    <div class="field-control">
+                                        <input type="text" :value="getStr('oauth2_scope')"
+                                            @input="setStr('oauth2_scope', $event.target.value)"
+                                            placeholder="openid profile" />
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- ================== SECTION: ADDITIONAL ================== -->
+                <div x-show="$store.settings.activeSubTab === 'advanced'" x-transition>
+                    <div class="field field-full">
+                        <div class="field-label">
+                            <div class="field-title">Additional Parameters</div>
+                            <div class="field-description">
+                                Any other LiteLLM parameters not listed above. Format: KEY=VALUE, one per line. See
+                                <a href="https://docs.litellm.ai/docs/set_keys" target="_blank">LiteLLM Keys</a> and
+                                <a href="https://docs.litellm.ai/docs/proxy/timeout" target="_blank">Timeouts docs</a>.
+                            </div>
+                        </div>
+                        <div class="field-control">
+                            <textarea style="height: 12em" x-model="rawOverflow" @input="serializeKwargs()"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+</body>
+
+<script>
+    function litellmSettings() {
+        return {
+            parsed: {},
+            rawOverflow: '',
+            _writing: false,
+
+
+            knownKeys: [
+                'timeout', 'stream_timeout', 'num_retries', 'max_retries', 'retry_delay',
+                'drop_params', 'force_ipv4', 'cache',
+                'api_key', 'api_base', 'api_version', 'organization',
+                'azure_api_base', 'azure_api_version', 'azure_api_type',
+                'vertex_project', 'vertex_location',
+                'cache_type', 'cache_ttl',
+                'redis_host', 'redis_port', 'redis_password', 'redis_namespace',
+                'redis_ttl', 'redis_flush_size', 'redis_ssl',
+                'similarity_threshold', 'redis_semantic_cache_embedding_model',
+                's3_bucket_name', 's3_region_name', 's3_path', 's3_endpoint_url',
+                's3_aws_access_key_id', 's3_aws_secret_access_key',
+                'gcs_bucket_name', 'gcs_path_service_account',
+                'disk_cache_dir',
+                'qdrant_api_base', 'qdrant_api_key', 'qdrant_collection_name',
+                'qdrant_similarity_threshold', 'qdrant_quantization_config',
+                'qdrant_semantic_cache_embedding_model',
+                'use_litellm_proxy', 'proxy_url', 'proxy_auth_method',
+                'azure_tenant_id', 'azure_client_id', 'azure_client_secret', 'azure_scope',
+                'oauth2_token_url', 'oauth2_client_id', 'oauth2_client_secret', 'oauth2_scope',
+            ],
+
+            init() {
+                this.parseKwargs();
+                this.$watch('$store.settings.settings.litellm_global_kwargs', () => {
+                    if (!this._writing) this.parseKwargs();
+                });
+            },
+
+            parseKwargs() {
+                var raw = this.$store.settings.settings?.litellm_global_kwargs;
+                if (!raw) { this.parsed = {}; this.rawOverflow = ''; return; }
+
+                // Handle both dict and string formats
+                if (typeof raw === 'object') {
+                    var structured = {};
+                    var overflow = [];
+                    var self = this;
+                    Object.keys(raw).forEach(function (key) {
+                        if (self.knownKeys.indexOf(key) !== -1) {
+                            structured[key] = String(raw[key]);
+                        } else {
+                            overflow.push(key + '=' + raw[key]);
+                        }
+                    });
+                    this.parsed = structured;
+                    this.rawOverflow = overflow.join('\n');
+                    return;
+                }
+
+                // String format (KEY=VALUE lines)
+                var str = String(raw).trim();
+                var structured2 = {};
+                var overflow2 = [];
+                var self2 = this;
+                str.split('\n').forEach(function (line) {
+                    line = line.trim();
+                    if (!line || line.charAt(0) === '#') { overflow2.push(line); return; }
+                    var eqIdx = line.indexOf('=');
+                    if (eqIdx === -1) { overflow2.push(line); return; }
+                    var key = line.substring(0, eqIdx).trim();
+                    var val = line.substring(eqIdx + 1).trim();
+                    if (self2.knownKeys.indexOf(key) !== -1) {
+                        structured2[key] = val;
+                    } else {
+                        overflow2.push(line);
+                    }
+                });
+                this.parsed = structured2;
+                this.rawOverflow = overflow2.join('\n');
+            },
+
+            serializeKwargs() {
+                this._writing = true;
+                var lines = [];
+                var self = this;
+                this.knownKeys.forEach(function (key) {
+                    var val = self.parsed[key];
+                    if (val !== undefined && val !== '' && val !== null) {
+                        lines.push(key + '=' + val);
+                    }
+                });
+                if (this.rawOverflow && this.rawOverflow.trim()) {
+                    lines.push(this.rawOverflow.trim());
+                }
+                this.$store.settings.settings.litellm_global_kwargs = lines.join('\n');
+                var ref = this;
+                this.$nextTick(function () { ref._writing = false; });
+            },
+
+            getNum: function (key, fallback) {
+                var v = this.parsed[key];
+                return (v !== undefined && v !== '') ? Number(v) : fallback;
+            },
+            setNum: function (key, val) {
+                this.parsed[key] = (val !== '' && val !== null) ? String(val) : '';
+                this.serializeKwargs();
+            },
+            getStr: function (key) {
+                return this.parsed[key] || '';
+            },
+            setStr: function (key, val) {
+                this.parsed[key] = val || '';
+                this.serializeKwargs();
+            },
+            getBool: function (key) {
+                var v = (this.parsed[key] || '').toLowerCase();
+                return v === 'true' || v === '1';
+            },
+            setBool: function (key, val) {
+                this.parsed[key] = val ? 'true' : 'false';
+                this.serializeKwargs();
+            },
+        };
+    }
+</script>
+
+<style>
+    .settings-nav-card {
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    .settings-nav-card:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(79, 195, 247, 0.3) !important;
+    }
+
+    .settings-nav-card.active {
+        background: rgba(79, 195, 247, 0.1);
+        border-color: rgba(79, 195, 247, 0.5) !important;
+    }
+</style>
+
+</html>

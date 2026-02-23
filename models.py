@@ -60,6 +60,7 @@ turn_off_logging()
 browser_use_monkeypatch.apply()
 
 litellm.modify_params = True # helps fix anthropic tool calls by browser-use
+litellm.drop_params = True # drop unsupported params for providers like Z.AI
 
 class ModelType(Enum):
     CHAT = "Chat"

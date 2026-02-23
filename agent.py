@@ -1,4 +1,4 @@
-import asyncio, random, string, threading
+import asyncio, random, string, threading, time
 import nest_asyncio
 
 nest_asyncio.apply()
@@ -302,12 +302,15 @@ class AgentConfig:
     embeddings_model: models.ModelConfig
     browser_model: models.ModelConfig
     mcp_servers: str
+    subagent_model: models.ModelConfig | None = None
     profile: str = ""
     memory_subdir: str = ""
     knowledge_subdirs: list[str] = field(default_factory=lambda: ["default", "custom"])
     browser_http_headers: dict[str, str] = field(
         default_factory=dict
     )  # Custom HTTP headers for browser requests
+    browser_max_steps: int = 25  # Maximum steps for browser agent tasks
+    browser_backend: str = "browser_use"  # Which browser backend to use
     code_exec_ssh_enabled: bool = True
     code_exec_ssh_addr: str = "localhost"
     code_exec_ssh_port: int = 55022
@@ -767,6 +770,14 @@ class Agent:
         background: bool = False,
     ):
         model = self.get_utility_model()
+        model_info = f"{self.config.utility_model.provider}/{self.config.utility_model.name}"
+
+        # Log the call for visibility
+        msg_preview = message[:100] + "..." if len(message) > 100 else message
+        PrintStyle(font_color="#888888").print(
+            f"[utility_model] Calling {model_info} | msg: {msg_preview}"
+        )
+        start_time = time.time()
 
         # call extensions
         call_data = {
@@ -783,13 +794,32 @@ class Agent:
             if call_data["callback"]:
                 await call_data["callback"](chunk)
 
-        response, _reasoning = await call_data["model"].unified_call(
-            system_message=call_data["system"],
-            user_message=call_data["message"],
-            response_callback=stream_callback if call_data["callback"] else None,
-            rate_limiter_callback=(
-                self.rate_limiter_callback if not call_data["background"] else None
-            ),
+        try:
+            response, _reasoning = await asyncio.wait_for(
+                call_data["model"].unified_call(
+                    system_message=call_data["system"],
+                    user_message=call_data["message"],
+                    response_callback=stream_callback if call_data["callback"] else None,
+                    rate_limiter_callback=(
+                        self.rate_limiter_callback if not call_data["background"] else None
+                    ),
+                ),
+                timeout=120,  # 2 minute timeout to prevent infinite hangs
+            )
+        except asyncio.TimeoutError:
+            elapsed = time.time() - start_time
+            PrintStyle(font_color="#ff6b6b", bold=True).print(
+                f"[utility_model] ⚠️ TIMEOUT after {elapsed:.1f}s calling {model_info}"
+            )
+            raise TimeoutError(
+                f"Utility model call to {model_info} timed out after 120s. "
+                f"Check if your utility model provider is running and responsive."
+            )
+
+        elapsed = time.time() - start_time
+        resp_preview = response[:80] + "..." if len(response) > 80 else response
+        PrintStyle(font_color="#888888").print(
+            f"[utility_model] ✓ {model_info} responded in {elapsed:.1f}s | resp: {resp_preview}"
         )
 
         return response

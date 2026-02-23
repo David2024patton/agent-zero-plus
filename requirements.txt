@@ -27,6 +27,7 @@ pypdf==6.0.0
 python-dotenv==1.1.0
 pytz==2024.2
 sentence-transformers==3.0.1
+swarms>=7.0.0
 tiktoken==0.8.0
 unstructured[all-docs]==0.16.23
 unstructured-client==0.31.0
@@ -51,3 +52,4 @@ pywinpty==3.0.2; sys_platform == "win32"
 python-socketio>=5.14.2
 uvicorn>=0.38.0
 wsproto>=1.2.0
+discord.py>=2.3.0

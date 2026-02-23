@@ -1,0 +1,82 @@
+<html>
+
+<head>
+    <title>Swarm Limits</title>
+</head>
+
+<body>
+    <div x-data>
+        <template x-if="$store.settings.settings">
+            <div>
+                <div class="section-title">Limits &amp; Safety</div>
+                <div class="section-description">
+                    Set resource limits and safety guards for swarm execution. These prevent runaway costs and excessive
+                    resource usage.
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Max Agents per Swarm</div>
+                        <div class="field-description">
+                            Maximum number of agents that can be spawned in a single swarm. Prevents excessive API
+                            costs.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <input type="range" min="1" max="25" step="1"
+                            x-model.number="$store.settings.settings.swarm_max_agents" />
+                        <span class="range-value" x-text="$store.settings.settings.swarm_max_agents"></span>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Max Loops per Agent</div>
+                        <div class="field-description">
+                            Maximum number of reasoning loops each agent can perform. Higher values allow deeper
+                            analysis but increase token cost.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <input type="range" min="1" max="10" step="1"
+                            x-model.number="$store.settings.settings.swarm_max_loops" />
+                        <span class="range-value" x-text="$store.settings.settings.swarm_max_loops"></span>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Execution Timeout (seconds)</div>
+                        <div class="field-description">
+                            Maximum time in seconds for a swarm to complete. The swarm is terminated after this
+                            duration.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" min="30" max="1800" step="30"
+                            x-model.number="$store.settings.settings.swarm_timeout" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Track Token Usage</div>
+                        <div class="field-description">
+                            When enabled, the swarm tool tracks and reports token consumption for each agent in the
+                            swarm output.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="$store.settings.settings.swarm_track_tokens" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+        </template>
+    </div>
+</body>
+
+</html>

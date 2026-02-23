@@ -1,0 +1,40 @@
+{
+    "id": "whatsapp_channel",
+    "name": "WhatsApp",
+    "description": "Connect Agent Zero to WhatsApp Business API. Responds to incoming messages via webhook.",
+    "version": "1.0.0",
+    "type": "channel",
+    "entry": "__init__.py",
+    "config": {
+        "phone_number_id": {
+            "label": "Phone Number ID",
+            "description": "WhatsApp Business phone number ID from Meta Developer Console",
+            "type": "text",
+            "default": "",
+            "sensitive": false
+        },
+        "access_token": {
+            "label": "Access Token",
+            "description": "WhatsApp Cloud API permanent access token",
+            "type": "password",
+            "env": "WHATSAPP_ACCESS_TOKEN",
+            "default": "",
+            "sensitive": true
+        },
+        "verify_token": {
+            "label": "Webhook Verify Token",
+            "description": "Token for webhook verification handshake",
+            "type": "password",
+            "env": "WHATSAPP_VERIFY_TOKEN",
+            "default": "",
+            "sensitive": true
+        },
+        "allowed_numbers": {
+            "label": "Allowed Phone Numbers",
+            "description": "Comma-separated phone numbers allowed to interact. Leave empty for all.",
+            "type": "text",
+            "default": "",
+            "sensitive": false
+        }
+    }
+}

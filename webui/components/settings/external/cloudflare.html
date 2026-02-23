@@ -1,0 +1,47 @@
+<html>
+
+<head>
+    <title>Cloudflare</title>
+</head>
+
+<body>
+    <div x-data>
+        <template x-if="$store.settings.settings">
+            <div>
+                <div class="section-title">Cloudflare Workers AI</div>
+                <div class="section-description">
+                    Credentials for the Cloudflare Workers AI toMarkdown API, used by the
+                    <strong>document_to_markdown</strong> tool to convert documents (PDF, DOCX, images, etc.) to
+                    Markdown.
+                    Get your credentials at
+                    <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank">Cloudflare Dashboard → API
+                        Tokens</a>.
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Account ID</div>
+                        <div class="field-description">Your Cloudflare Account ID (found in the dashboard sidebar)</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="text" x-model="$store.settings.settings.cloudflare_account_id" autocomplete="off"
+                            placeholder="Enter Cloudflare Account ID" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">API Token</div>
+                        <div class="field-description">A Cloudflare API token with Workers AI read permission</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="password" x-model="$store.settings.settings.cloudflare_api_token"
+                            autocomplete="off" placeholder="Enter Cloudflare API Token" />
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+</body>
+
+</html>

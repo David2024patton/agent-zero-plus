@@ -10,6 +10,7 @@ from python.helpers.browser_use import browser_use  # type: ignore[attr-defined]
 from python.helpers.print_style import PrintStyle
 from python.helpers.playwright import ensure_playwright_binary
 from python.helpers.secrets import get_secrets_manager
+from python.helpers import webmcp_client
 from python.extensions.message_loop_start._10_iteration_no import get_iter_no
 from pydantic import BaseModel
 import uuid
@@ -32,16 +33,16 @@ class State:
 
     def __del__(self):
         self.kill_task()
-        files.delete_dir(self.get_user_data_dir()) # cleanup user data dir
+        # NOTE: user_data_dir is NOT deleted here to persist cookies/sessions
 
     def get_user_data_dir(self):
-        return str(
-            Path.home()
-            / ".config"
-            / "browseruse"
-            / "profiles"
-            / f"agent_{self.agent.context.id}"
+        # Persist browser profiles on the bind-mounted volume so cookies
+        # and login sessions survive across container and task restarts.
+        profile_dir = files.get_abs_path(
+            "tmp", "browser_profiles", f"agent_{self.agent.context.id}"
         )
+        files.make_dirs(profile_dir)
+        return profile_dir
 
     async def _initialize(self):
         if self.browser_session:
@@ -63,11 +64,16 @@ class State:
                 minimum_wait_page_load_time=1.0,
                 wait_for_network_idle_page_load_time=2.0,
                 maximum_wait_page_load_time=10.0,
-                window_size={"width": 1024, "height": 2048},
-                screen={"width": 1024, "height": 2048},
-                viewport={"width": 1024, "height": 2048},
+                window_size={"width": 1280, "height": 800},
+                screen={"width": 1280, "height": 800},
+                viewport={"width": 1280, "height": 800},
                 no_viewport=False,
-                args=["--headless=new"],
+                args=[
+                    "--headless=new",
+                    "--no-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--disable-gpu",
+                ],
                 # Use a unique user data directory to avoid conflicts
                 user_data_dir=self.get_user_data_dir(),
                 extra_http_headers=self.agent.config.browser_http_headers or {},
@@ -88,7 +94,7 @@ class State:
             try:
                 page = await self.browser_session.get_current_page()
                 if page:
-                    await page.set_viewport_size({"width": 1024, "height": 2048})
+                    await page.set_viewport_size({"width": 1280, "height": 800})
             except Exception as e:
                 PrintStyle().warning(f"Could not force set viewport size: {e}")
 
@@ -98,8 +104,14 @@ class State:
         if self.browser_session and self.browser_session.browser_context:
             js_override = files.get_abs_path("lib/browser/init_override.js")
             await self.browser_session.browser_context.add_init_script(path=js_override) if self.browser_session else None
+            # Inject WebMCP bridge for structured tool discovery
+            js_webmcp = files.get_abs_path("lib/browser/webmcp_bridge.js")
+            await self.browser_session.browser_context.add_init_script(path=js_webmcp) if self.browser_session else None
 
     def start_task(self, task: str):
+        return self.start_task_with_steps(task, 50)
+
+    def start_task_with_steps(self, task: str, max_steps: int = 50):
         if self.task and self.task.is_alive():
             self.kill_task()
 
@@ -108,7 +120,7 @@ class State:
         )
         if self.agent.context.task:
             self.agent.context.task.add_child_task(self.task, terminate_thread=True)
-        self.task.start_task(self._run_task, task) if self.task else None
+        self.task.start_task(self._run_task, task, max_steps) if self.task else None
         return self.task
 
     def kill_task(self):
@@ -130,13 +142,17 @@ class State:
         self.use_agent = None
         self.iter_no = 0
 
-    async def _run_task(self, task: str):
+    async def _run_task(self, task: str, max_steps: int = 50):
         await self._initialize()
 
         class DoneResult(BaseModel):
             title: str
             response: str
             page_summary: str
+
+        class HumanHelpRequest(BaseModel):
+            reason: str
+            what_to_do: str
 
         # Initialize controller
         controller = browser_use.Controller(output_model=DoneResult)
@@ -149,6 +165,137 @@ class State:
             )
             return result
 
+        # Register human-in-the-loop action for CAPTCHAs and login walls
+        @controller.registry.action(
+            "Request human help - use when blocked by CAPTCHA, login wall, or other obstacle you cannot solve autonomously",
+            param_model=HumanHelpRequest,
+        )
+        async def request_human_help(params: HumanHelpRequest):
+            self._human_help_requested = True
+            self._human_help_reason = params.reason
+            self._human_help_action = params.what_to_do
+            result = browser_use.ActionResult(
+                is_done=True,
+                success=False,
+                extracted_content=f"HUMAN_HELP_NEEDED: {params.reason} — Action required: {params.what_to_do}",
+            )
+            return result
+
+        # Register WebMCP structured tool action
+        class WebMCPToolCall(BaseModel):
+            tool_name: str
+            parameters: str  # JSON string of parameters
+
+        @controller.registry.action(
+            "Use WebMCP tool - call a structured API exposed by the current page via WebMCP (preferred over clicking/typing when available)",
+            param_model=WebMCPToolCall,
+        )
+        async def use_webmcp_tool(params: WebMCPToolCall):
+            page = await self.browser_session.get_current_page() if self.browser_session else None
+            if not page:
+                return browser_use.ActionResult(
+                    is_done=False, success=False,
+                    extracted_content="No page available for WebMCP call",
+                )
+            try:
+                tool_params = DirtyJson.parse_string(params.parameters) if params.parameters else {}
+            except Exception:
+                tool_params = {}
+            result = await webmcp_client.call_tool(page, params.tool_name, tool_params)
+            if result.success:
+                content = f"WebMCP tool '{params.tool_name}' returned: {result.result}"
+                return browser_use.ActionResult(
+                    is_done=False, success=True, extracted_content=content,
+                )
+            else:
+                content = f"WebMCP tool '{params.tool_name}' failed: {result.error}"
+                return browser_use.ActionResult(
+                    is_done=False, success=False, extracted_content=content,
+                )
+
+        # ── Multi-Tab Management Actions ──────────────────────────────────
+
+        @controller.registry.action(
+            "List open tabs - shows all browser tabs with their index, title, and URL",
+        )
+        async def list_open_tabs():
+            if not self.browser_session or not self.browser_session.browser_context:
+                return browser_use.ActionResult(
+                    is_done=False, success=False,
+                    extracted_content="No browser context available",
+                )
+            pages = self.browser_session.browser_context.pages
+            current_page = await self.browser_session.get_current_page()
+            lines = [f"📑 Open tabs ({len(pages)} total):"]
+            for i, p in enumerate(pages):
+                marker = " ◀ ACTIVE" if p == current_page else ""
+                title = await p.title() if not p.is_closed() else "(closed)"
+                url = p.url if not p.is_closed() else ""
+                lines.append(f"  [{i}] {title} — {url}{marker}")
+            return browser_use.ActionResult(
+                is_done=False, success=True,
+                extracted_content="\n".join(lines),
+            )
+
+        class SwitchTabParams(BaseModel):
+            tab_index: int
+
+        @controller.registry.action(
+            "Switch to tab - switch the active browser tab by its index (use 'List open tabs' first to see indices)",
+            param_model=SwitchTabParams,
+        )
+        async def switch_to_tab(params: SwitchTabParams):
+            if not self.browser_session or not self.browser_session.browser_context:
+                return browser_use.ActionResult(
+                    is_done=False, success=False,
+                    extracted_content="No browser context available",
+                )
+            pages = self.browser_session.browser_context.pages
+            if params.tab_index < 0 or params.tab_index >= len(pages):
+                return browser_use.ActionResult(
+                    is_done=False, success=False,
+                    extracted_content=f"Invalid tab index {params.tab_index}. Valid range: 0-{len(pages) - 1}",
+                )
+            target_page = pages[params.tab_index]
+            if target_page.is_closed():
+                return browser_use.ActionResult(
+                    is_done=False, success=False,
+                    extracted_content=f"Tab [{params.tab_index}] is closed",
+                )
+            await target_page.bring_to_front()
+            title = await target_page.title()
+            return browser_use.ActionResult(
+                is_done=False, success=True,
+                extracted_content=f"Switched to tab [{params.tab_index}]: {title} — {target_page.url}",
+            )
+
+        class OpenTabParams(BaseModel):
+            url: str
+
+        @controller.registry.action(
+            "Open new tab - opens a URL in a new browser tab without closing the current one",
+            param_model=OpenTabParams,
+        )
+        async def open_new_tab(params: OpenTabParams):
+            if not self.browser_session or not self.browser_session.browser_context:
+                return browser_use.ActionResult(
+                    is_done=False, success=False,
+                    extracted_content="No browser context available",
+                )
+            try:
+                new_page = await self.browser_session.browser_context.new_page()
+                await new_page.goto(params.url, wait_until="domcontentloaded", timeout=15000)
+                title = await new_page.title()
+                tab_index = len(self.browser_session.browser_context.pages) - 1
+                return browser_use.ActionResult(
+                    is_done=False, success=True,
+                    extracted_content=f"Opened new tab [{tab_index}]: {title} — {params.url}",
+                )
+            except Exception as e:
+                return browser_use.ActionResult(
+                    is_done=False, success=False,
+                    extracted_content=f"Failed to open tab: {e}",
+                )
         model = self.agent.get_browser_model()
 
         try:
@@ -176,16 +323,40 @@ class State:
 
         self.iter_no = get_iter_no(self.agent)
 
+        # Track WebMCP tools discovered on the current page
+        self._webmcp_tools_announced = set()
+
         async def hook(agent: browser_use.Agent):
             await self.agent.wait_if_paused()
             if self.iter_no != get_iter_no(self.agent):
                 raise InterventionException("Task cancelled")
+            # WebMCP tool discovery on each step
+            try:
+                page = await self.browser_session.get_current_page() if self.browser_session else None
+                if page:
+                    status = await webmcp_client.check_status(page)
+                    if status.get("available"):
+                        tools = await webmcp_client.discover_tools(page)
+                        new_tools = [t for t in tools if t.name not in self._webmcp_tools_announced]
+                        if new_tools:
+                            for t in new_tools:
+                                self._webmcp_tools_announced.add(t.name)
+                            prompt_section = webmcp_client.format_tools_for_prompt(new_tools)
+                            if prompt_section and agent._message_manager:
+                                agent._message_manager.add_state_message(
+                                    browser_use.MessageManagerState(
+                                        role="user",
+                                        content=prompt_section,
+                                    )
+                                )
+            except Exception as e:
+                pass  # WebMCP discovery is best-effort
 
         # try:
         result = None
         if self.use_agent:
             result = await self.use_agent.run(
-                max_steps=50, on_step_start=hook, on_step_end=hook
+                max_steps=max_steps, on_step_start=hook, on_step_end=hook
             )
         return result
 
@@ -212,12 +383,28 @@ class State:
 
 class BrowserAgent(Tool):
 
-    async def execute(self, message="", reset="", **kwargs):
+    async def execute(self, message="", reset="", max_steps="", **kwargs):
         self.guid = self.agent.context.generate_id() # short random id
         reset = str(reset).lower().strip() == "true"
+        config_default = getattr(self.agent.config, "browser_max_steps", 25)
+        try:
+            max_steps_int = int(max_steps) if max_steps else config_default
+        except (ValueError, TypeError):
+            max_steps_int = config_default
+        max_steps_int = max(5, min(max_steps_int, 200))  # clamp to [5, 200]
+
+        # Check if we should use an alternative browser backend
+        browser_backend = getattr(self.agent.config, "browser_backend", "browser_use")
+        if browser_backend != "browser_use":
+            return await self._execute_with_backend(browser_backend, message, max_steps_int)
+
+        self._human_help_requested = False
+        self._human_help_reason = ""
+        self._human_help_action = ""
+
         await self.prepare_state(reset=reset)
         message = get_secrets_manager(self.agent.context).mask_values(message, placeholder="<secret>{key}</secret>") # mask any potential passwords passed from A0 to browser-use to browser-use format
-        task = self.state.start_task(message) if self.state else None
+        task = self.state.start_task_with_steps(message, max_steps_int) if self.state else None
 
         # wait for browser agent to finish and update progress with timeout
         timeout_seconds = 300  # 5 minute timeout
@@ -286,6 +473,19 @@ class BrowserAgent(Tool):
         #     # self.state.kill_task()
         #     pass
 
+        # Check if human help was requested (CAPTCHA, login wall, etc.)
+        if self._human_help_requested:
+            help_text = (
+                f"🚧 **Browser agent needs human help!**\n"
+                f"**Reason**: {self._human_help_reason}\n"
+                f"**Action needed**: {self._human_help_action}\n\n"
+                f"The browser session is still open. After resolving the issue, "
+                f"call browser_agent again with reset=false to continue."
+            )
+            help_text = self._mask(help_text)
+            self.log.update(answer=help_text)
+            return Response(message=help_text, break_loop=False)
+
         # Check if task completed successfully
         if result and result.is_done():
             answer = result.final_result()
@@ -315,6 +515,15 @@ class BrowserAgent(Tool):
         # Mask answer for logs and response
         answer_text = self._mask(answer_text)
 
+        # Log final URL visited
+        if self.state and self.state.use_agent:
+            try:
+                urls = result.urls() if result else []
+                if urls:
+                    self.log.update(final_url=urls[-1])
+            except Exception:
+                pass
+
         # update the log (without screenshot path here, user can click)
         self.log.update(answer=answer_text)
 
@@ -330,12 +539,64 @@ class BrowserAgent(Tool):
         # respond (with screenshot path)
         return Response(message=answer_text, break_loop=False)
 
+    async def _execute_with_backend(self, backend_name: str, message: str, max_steps: int) -> Response:
+        """Execute browser task using an alternative backend adapter."""
+        from python.helpers.backends import get_backend
+
+        PrintStyle(font_color="#1B4F72", padding=True, background_color="white", bold=True).print(
+            f"{self.agent.agent_name}: Using browser backend '{backend_name}'"
+        )
+
+        try:
+            backend = get_backend(backend_name, self.agent)
+            if backend is None:
+                # Shouldn't happen — browser_use is handled before this
+                return Response(message="Browser backend returned None", break_loop=False)
+
+            self.set_progress(f"Initializing {backend_name} backend...")
+            result = await backend.run_task(message, max_steps)
+
+            # Build answer text
+            answer_text = result.content or "Task completed"
+            if result.error:
+                answer_text = f"⚠️ Backend '{backend_name}' error: {result.error}\n\n{answer_text}"
+
+            # Log URLs if available
+            if result.urls_visited:
+                self.log.update(final_url=result.urls_visited[-1])
+
+            # Log screenshot if available
+            if result.screenshot_path:
+                answer_text += f"\n\nScreenshot: {result.screenshot_path}"
+
+            self.log.update(answer=answer_text)
+
+            # Clean up
+            try:
+                await backend.close()
+            except Exception:
+                pass
+
+            return Response(message=answer_text, break_loop=False)
+
+        except ImportError as e:
+            error_msg = f"Backend '{backend_name}' is not installed: {str(e)}"
+            self.log.update(answer=error_msg)
+            return Response(message=error_msg, break_loop=False)
+        except Exception as e:
+            error_msg = f"Backend '{backend_name}' failed: {str(e)}"
+            PrintStyle().error(error_msg)
+            self.log.update(answer=error_msg)
+            return Response(message=error_msg, break_loop=False)
+
     def get_log_object(self):
+        kvps = dict(self.args) if self.args else {}
+        kvps["browser_model"] = f"{self.agent.config.browser_model.provider}/{self.agent.config.browser_model.name}"
         return self.agent.context.log.log(
             type="browser",
             heading=f"icon://captive_portal {self.agent.agent_name}: Calling Browser Agent",
             content="",
-            kvps=self.args,
+            kvps=kvps,
         )
 
     async def get_update(self):

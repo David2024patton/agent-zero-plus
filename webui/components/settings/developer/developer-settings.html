@@ -1,28 +1,373 @@
-<html>
-  <head>
-    <title>Developer</title>
-  </head>
+﻿<html>
 
-  <body>
-    <div x-data>
-      <template x-if="$store.settings">
-        <div>
-          <nav>
-            <ul>
-              <li>
-                <a href="#section-dev">
-                  <img src="/public/dev.svg" alt="Development" />
-                  <span>Development</span>
-                </a>
-              </li>
-            </ul>
-          </nav>
+<head>
+  <title>Developer</title>
+</head>
 
-          <div id="section-dev" class="section">
-            <x-component path="settings/developer/dev.html"></x-component>
+<body>
+  <div x-data>
+    <template x-if="$store.settings.settings">
+      <div>
+
+        <!-- â•â•â•â•â•â•â• Development (General) â•â•â•â•â•â•â• -->
+        <div x-show="$store.settings.activeSubTab === 'dev-general'">
+          <x-component path="settings/developer/dev.html"></x-component>
+        </div>
+
+        <!-- â•â•â•â•â•â•â• Sub-Agent Controls â•â•â•â•â•â•â• -->
+        <div x-show="$store.settings.activeSubTab === 'dev-subagents'">
+          <div class="section-title">Sub-Agent Controls</div>
+          <div class="section-description">
+            Configure nested sub-agent spawning behaviour. Sub-agents allow the main agent to delegate tasks to child
+            agents.
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <div class="field-title">Enable Sub-Agents</div>
+              <div class="field-description">Allow the agent to spawn nested sub-agents for task delegation.</div>
+            </div>
+            <div class="field-control">
+              <label class="toggle">
+                <input type="checkbox" x-model="$store.settings.settings.subagent_enabled" />
+                <span class="toggler"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <div class="field-title">Max Nesting Depth</div>
+              <div class="field-description">Maximum depth of sub-agent nesting (how many levels deep sub-agents can
+                spawn sub-agents).</div>
+            </div>
+            <div class="field-control">
+              <input type="number" min="1" max="10" x-model.number="$store.settings.settings.subagent_max_depth" />
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <div class="field-title">Max Children</div>
+              <div class="field-description">Maximum number of child sub-agents a single agent can spawn simultaneously.
+              </div>
+            </div>
+            <div class="field-control">
+              <input type="number" min="1" max="50" x-model.number="$store.settings.settings.subagent_max_children" />
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <div class="field-title">Per-Channel Model Override (Discord)</div>
+              <div class="field-description">Override the default model for Discord interactions. Leave empty to use the
+                main chat model.</div>
+            </div>
+            <div class="field-control">
+              <input type="text" x-model="$store.settings.settings.model_override_discord"
+                placeholder="e.g. openai/gpt-4o" />
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <div class="field-title">Per-Channel Model Override (Telegram)</div>
+              <div class="field-description">Override the default model for Telegram interactions.</div>
+            </div>
+            <div class="field-control">
+              <input type="text" x-model="$store.settings.settings.model_override_telegram"
+                placeholder="e.g. anthropic/claude-sonnet-4-20250514" />
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <div class="field-title">Per-Channel Model Override (Slack)</div>
+              <div class="field-description">Override the default model for Slack interactions.</div>
+            </div>
+            <div class="field-control">
+              <input type="text" x-model="$store.settings.settings.model_override_slack"
+                placeholder="e.g. google/gemini-2.5-pro" />
+            </div>
           </div>
         </div>
-      </template>
-    </div>
-  </body>
+
+        <!-- â•â•â•â•â•â•â• Sandbox & Security â•â•â•â•â•â•â• -->
+        <div x-show="$store.settings.activeSubTab === 'dev-sandbox'">
+          <div class="section-title">Sandbox & Security</div>
+          <div class="section-description">
+            Browser sandbox isolation and security settings for the agent's execution environment.
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <div class="field-title">Air-Gapped Mode</div>
+              <div class="field-description">Disable all external network access. The agent will only use local models
+                and resources.</div>
+            </div>
+            <div class="field-control">
+              <label class="toggle">
+                <input type="checkbox" x-model="$store.settings.settings.air_gapped_mode" />
+                <span class="toggler"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <div class="field-title">Browser Sandbox Binds</div>
+              <div class="field-description">Volume bind mounts for the sandboxed browser container (host:container
+                format).</div>
+            </div>
+            <div class="field-control">
+              <input type="text" x-model="$store.settings.settings.sandbox_browser_binds" />
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <div class="field-title">Read-Only Filesystem</div>
+              <div class="field-description">Mount the browser sandbox filesystem as read-only to prevent writes.</div>
+            </div>
+            <div class="field-control">
+              <label class="toggle">
+                <input type="checkbox" x-model="$store.settings.settings.sandbox_browser_read_only" />
+                <span class="toggler"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <div class="field-title">Network Mode</div>
+              <div class="field-description">Docker network mode for the sandboxed browser container.</div>
+            </div>
+            <div class="field-control">
+              <select x-model="$store.settings.settings.sandbox_browser_network">
+                <option value="bridge">Bridge (isolated)</option>
+                <option value="host">Host (full access)</option>
+                <option value="none">None (no network)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- â•â•â•â•â•â•â• Cron Webhooks â•â•â•â•â•â•â• -->
+        <div x-show="$store.settings.activeSubTab === 'dev-cron'">
+          <div class="section-title">Cron Webhooks</div>
+          <div class="section-description">
+            Schedule periodic webhook deliveries. The agent can invoke external services on a timer.
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <div class="field-title">Enable Cron Webhooks</div>
+              <div class="field-description">Activate the scheduled webhook delivery system.</div>
+            </div>
+            <div class="field-control">
+              <label class="toggle">
+                <input type="checkbox" x-model="$store.settings.settings.cron_webhook_enabled" />
+                <span class="toggler"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <div class="field-title">Default Webhook URL</div>
+              <div class="field-description">The default URL that cron jobs will POST to.</div>
+            </div>
+            <div class="field-control">
+              <input type="text" x-model="$store.settings.settings.cron_webhook_default_url"
+                placeholder="https://example.com/webhook" />
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <div class="field-title">Auth Token</div>
+              <div class="field-description">Bearer token sent in the Authorization header with each webhook delivery.
+              </div>
+            </div>
+            <div class="field-control">
+              <input type="password" autocomplete="off" x-model="$store.settings.settings.cron_webhook_auth_token" />
+            </div>
+          </div>
+        </div>
+
+        <!-- â•â•â•â•â•â•â• WebMCP â•â•â•â•â•â•â• -->
+        <div x-show="$store.settings.activeSubTab === 'dev-webmcp'">
+          <div class="section-title">WebMCP</div>
+          <div class="section-description">
+            Web Model Context Protocol support. WebMCP enables browser-based tool discovery and execution, allowing the
+            agent to interact with MCP-enabled websites directly.
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <div class="field-title">Enable WebMCP</div>
+              <div class="field-description">Allow the agent to discover and use MCP tools exposed by websites via the
+                WebMCP standard.</div>
+            </div>
+            <div class="field-control">
+              <label class="toggle">
+                <input type="checkbox" x-model="$store.settings.settings.webmcp_enabled" />
+                <span class="toggler"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- â•â•â•â•â•â•â• Lifecycle Reactions â•â•â•â•â•â•â• -->
+        <div x-show="$store.settings.activeSubTab === 'dev-lifecycle'">
+          <div class="section-title">Lifecycle Reactions</div>
+          <div class="section-description">
+            Configure emoji reactions that the agent posts during message lifecycle events (thinking, processing, done,
+            error).
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <div class="field-title">Enable Lifecycle Reactions</div>
+              <div class="field-description">Show emoji status indicators during agent processing stages.</div>
+            </div>
+            <div class="field-control">
+              <label class="toggle">
+                <input type="checkbox" x-model="$store.settings.settings.lifecycle_reactions_enabled" />
+                <span class="toggler"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <div class="field-title">Emoji Set</div>
+              <div class="field-description">Choose which set of emoji to use for lifecycle status indicators.</div>
+            </div>
+            <div class="field-control">
+              <select x-model="$store.settings.settings.lifecycle_reactions_emoji_set">
+                <option value="default">Default (ðŸ¤” âš™ï¸ âœ… âŒ)</option>
+                <option value="minimal">Minimal (â³ âœ… âŒ)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+
+
+      <!-- â•â•â•â•â•â•â• System Info â•â•â•â•â•â•â• -->
+      <div x-show="$store.settings.activeSubTab === 'dev-sysinfo'">
+        <div class="section-title">System Information</div>
+        <div class="section-description">
+          Runtime information about the Agent Zero instance.
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Environment</div>
+            <div class="field-description">Whether the agent is running inside Docker or natively.</div>
+          </div>
+          <div class="field-control" style="font-weight: 500;">
+            <span
+              x-text="$store.settings.additional?.is_dockerized ? 'ðŸ³ Docker Container' : 'ðŸ’» Native / Local'"></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Shell Interface</div>
+            <div class="field-description">Currently configured terminal interface.</div>
+          </div>
+          <div class="field-control" style="font-weight: 500;">
+            <span x-text="$store.settings.settings.shell_interface === 'local' ? 'Local Python TTY' : 'SSH'"></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Agent Profile</div>
+            <div class="field-description">Active agent personality profile.</div>
+          </div>
+          <div class="field-control" style="font-weight: 500;">
+            <span x-text="$store.settings.settings.agent_profile || 'default'"></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Memory Subdirectory</div>
+            <div class="field-description">Active memory storage directory.</div>
+          </div>
+          <div class="field-control" style="font-weight: 500;">
+            <span x-text="$store.settings.settings.agent_memory_subdir || 'default'"></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Knowledge Subdirectory</div>
+            <div class="field-description">Active knowledge base directory.</div>
+          </div>
+          <div class="field-control" style="font-weight: 500;">
+            <span x-text="$store.settings.settings.agent_knowledge_subdir || 'custom'"></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">WebMCP Status</div>
+            <div class="field-description">Whether WebMCP protocol is active.</div>
+          </div>
+          <div class="field-control" style="font-weight: 500;">
+            <span x-text="$store.settings.settings.webmcp_enabled ? 'âœ… Enabled' : 'âŒ Disabled'"></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">MCP Server</div>
+            <div class="field-description">Whether the built-in MCP server is running.</div>
+          </div>
+          <div class="field-control" style="font-weight: 500;">
+            <span x-text="$store.settings.settings.mcp_server_enabled ? 'âœ… Running' : 'â¹ï¸ Stopped'"></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">A2A Server</div>
+            <div class="field-description">Whether the Agent-to-Agent protocol server is running.</div>
+          </div>
+          <div class="field-control" style="font-weight: 500;">
+            <span x-text="$store.settings.settings.a2a_server_enabled ? 'âœ… Running' : 'â¹ï¸ Stopped'"></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Swarms</div>
+            <div class="field-description">Whether swarm orchestration is enabled.</div>
+          </div>
+          <div class="field-control" style="font-weight: 500;">
+            <span
+              x-text="$store.settings.settings.swarm_enabled ? 'âœ… Enabled (' + $store.settings.settings.swarm_max_agents + ' max agents)' : 'âŒ Disabled'"></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Air-Gapped Mode</div>
+            <div class="field-description">Whether external network access is disabled.</div>
+          </div>
+          <div class="field-control" style="font-weight: 500;">
+            <span x-text="$store.settings.settings.air_gapped_mode ? 'ðŸ”’ Active' : 'ðŸŒ Open'"></span>
+          </div>
+        </div>
+      </div>
+
+  </div>
+  </template>
+  </div>
+</body>
+
 </html>

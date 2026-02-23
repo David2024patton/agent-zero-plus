@@ -8,10 +8,11 @@ if code runs long, use runtime "output" to wait
 use argument reset true on next call to kill previous process when stuck default false
 use "pip" "npm" "apt-get" in "terminal" to install package
 to output, use print() or console.log()
-if tool outputs error, adjust code before retrying; 
+if tool outputs error, diagnose the cause: missing package? install it. wrong config? fix it. bad syntax? correct it. then retry
+if a dependency is missing (ModuleNotFoundError, command not found), install it immediately before retrying
 important: check code for placeholders or demo data; replace with real variables; don't reuse snippets
 don't use with other tools except thoughts; wait for response before using others
-check dependencies before running code
+check dependencies before running code; install any missing ones first
 output may end with [SYSTEM: ...] information comming from framework, not terminal
 usage:
 

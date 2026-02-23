@@ -1,0 +1,321 @@
+<html>
+
+<head>
+  <title>Logs</title>
+</head>
+
+<body>
+  <div x-data="{
+      activeLogTab: 'all',
+      activeCategory: null,
+      activeChannel: null,
+      autoRefresh: false,
+      _refreshTimer: null,
+      maxLines: 200,
+      logData: null,
+      loading: false,
+
+      // Color map for categories
+      catColors: {
+        agent: '#60a5fa',
+        browser: '#a78bfa',
+        code_exe: '#f472b6',
+        subagent: '#34d399',
+        error: '#f87171',
+        hint: '#fbbf24',
+        info: '#38bdf8',
+        progress: '#2dd4bf',
+        tool: '#fb923c',
+        mcp: '#c084fc',
+        util: '#94a3b8',
+        warning: '#fbbf24',
+        system: '#64748b',
+        swarm: '#2dd4bf',
+        http: '#818cf8',
+      },
+
+      // Color map for channels
+      channelColors: {
+        email: '#f59e0b',
+        discord: '#5865F2',
+        telegram: '#0088cc',
+        slack: '#4A154B',
+        teams: '#6264A7',
+        whatsapp: '#25D366',
+        webhook: '#818cf8',
+        matrix: '#0DBD8B',
+      },
+
+      channelIcons: {
+        email: '📧',
+        discord: '🎮',
+        telegram: '📱',
+        slack: '💼',
+        teams: '🏢',
+        whatsapp: '📲',
+        webhook: '🔗',
+        matrix: '🔷',
+      },
+
+      getCatColor(cat) {
+        return this.catColors[cat] || '#94a3b8';
+      },
+
+      getChannelColor(ch) {
+        return this.channelColors[ch] || '#60a5fa';
+      },
+
+      getChannelIcon(ch) {
+        return this.channelIcons[ch] || '🌐';
+      },
+
+      get currentLogText() {
+        if (!this.logData) return 'Loading logs...';
+        if (this.activeLogTab === 'system') {
+          if (!this.logData.file_logs) return '(No system logs)';
+          if (this.activeCategory) {
+            const filterTag = '[' + this.activeCategory.toUpperCase();
+            return this.logData.file_logs.split('\n\n')
+              .filter(line => line.includes(filterTag))
+              .join('\n\n') || '(No logs matching filter)';
+          }
+          return this.logData.file_logs;
+        }
+        if (this.activeLogTab === 'chat') {
+          if (!this.logData.context_logs?.length) return '(No chat logs)';
+          return this.logData.context_logs.map(l => {
+            const ts = l.timestamp ? new Date(l.timestamp * 1000).toISOString().replace('T', ' ').substring(0, 19) : '';
+            return `[${ts}] [${(l.context_name || l.context || '').substring(0, 12).padEnd(12)}] [${l.type.toUpperCase().padEnd(8)}] ${l.content}`;
+          }).join('\n\n');
+        }
+        // 'all' tab - combine both
+        const parts = [];
+        if (this.logData.file_logs) {
+          let sysLogs = this.logData.file_logs;
+          if (this.activeCategory) {
+            const filterTag = '[' + this.activeCategory.toUpperCase();
+            sysLogs = sysLogs.split('\n\n')
+              .filter(line => line.includes(filterTag))
+              .join('\n\n');
+          }
+          if (sysLogs) parts.push('=== SYSTEM LOGS ===\n\n' + sysLogs);
+        }
+        if (this.logData.context_logs?.length) {
+          const chatText = this.logData.context_logs.map(l => {
+            const ts = l.timestamp ? new Date(l.timestamp * 1000).toISOString().replace('T', ' ').substring(0, 19) : '';
+            return `[${ts}] [${(l.context_name || l.context || '').substring(0, 12).padEnd(12)}] [${l.type.toUpperCase().padEnd(8)}] ${l.content}`;
+          }).join('\n\n');
+          parts.push('=== CHAT LOGS ===\n\n' + chatText);
+        }
+        return parts.join('\n\n') || '(No logs available)';
+      },
+
+      get totalSystemLogs() { return this.logData?.total_system_logs || 0; },
+      get totalContextLogs() { return this.logData?.total_context_logs || 0; },
+      get categories() { return this.logData?.categories || {}; },
+      get channels() { return this.logData?.channels || {}; },
+      get sortedCategories() {
+        const cats = this.categories;
+        return Object.entries(cats).sort((a, b) => b[1] - a[1]);
+      },
+      get sortedChannels() {
+        const chs = this.channels;
+        return Object.entries(chs).sort((a, b) => b[1] - a[1]);
+      },
+
+      toggleCategoryFilter(cat) {
+        this.activeCategory = this.activeCategory === cat ? null : cat;
+      },
+
+      toggleChannelFilter(ch) {
+        this.activeChannel = this.activeChannel === ch ? null : ch;
+      },
+
+      async refreshLogs() {
+        this.loading = true;
+        try {
+          const csrfToken = await window.getCsrfToken();
+          const resp = await fetch('/logs_get', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+            body: JSON.stringify({ max_lines: this.maxLines })
+          });
+          this.logData = await resp.json();
+        } catch (e) {
+          this.logData = { ok: false, file_logs: 'Error fetching logs: ' + e.message, context_logs: [], total_system_logs: 0, total_context_logs: 0, categories: {}, channels: {} };
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async clearLogs() {
+        if (!confirm('Clear all logs? This cannot be undone.')) return;
+        try {
+          const csrfToken = await window.getCsrfToken();
+          const resp = await fetch('/logs_clear', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+            body: JSON.stringify({ system: true, context: true })
+          });
+          const result = await resp.json();
+          if (result.ok) {
+            this.activeCategory = null;
+            this.activeChannel = null;
+            await this.refreshLogs();
+          } else {
+            console.error('Clear logs failed:', result);
+          }
+        } catch (e) {
+          console.error('Failed to clear logs:', e);
+        }
+      },
+
+      copyLogs() {
+        navigator.clipboard.writeText(this.currentLogText).then(() => {
+          const btn = this.$refs.copyBtn;
+          if (btn) { btn.textContent = '✅ Copied!'; setTimeout(() => btn.textContent = '📋 Copy', 1500); }
+        });
+      },
+
+      toggleAutoRefresh() {
+        this.autoRefresh = !this.autoRefresh;
+        if (this.autoRefresh) {
+          this.refreshLogs();
+          this._refreshTimer = setInterval(() => this.refreshLogs(), 5000);
+        } else {
+          clearInterval(this._refreshTimer);
+          this._refreshTimer = null;
+        }
+      },
+
+      buttonStyle(active) {
+        return active
+          ? 'padding: 6px 14px; border-radius: 6px; border: 1px solid var(--color-accent, #4fc3f7); background: var(--color-accent, #4fc3f7); color: #000; font-size: 13px; cursor: pointer; font-weight: 600;'
+          : 'padding: 6px 14px; border-radius: 6px; border: 1px solid var(--color-border, #333); background: transparent; color: var(--color-text, #ccc); font-size: 13px; cursor: pointer;';
+      },
+
+      destroy() {
+        if (this._refreshTimer) clearInterval(this._refreshTimer);
+      }
+    }" x-init="$nextTick(() => refreshLogs())">
+    <div class="section-title">Logs</div>
+    <div class="section-description">
+      View detailed system, agent, tool, and chat logs. Click a category or channel badge to filter.
+    </div>
+
+    <!-- Log tab selector -->
+    <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center; flex-wrap: wrap;">
+      <button @click="activeLogTab = 'all'" :style="buttonStyle(activeLogTab === 'all')">
+        📊 All
+      </button>
+      <button @click="activeLogTab = 'chat'" :style="buttonStyle(activeLogTab === 'chat')">
+        💬 Chat
+        <span x-show="totalContextLogs > 0" x-text="'(' + totalContextLogs + ')'"
+          style="font-size: 10px; opacity: 0.7;"></span>
+      </button>
+      <button @click="activeLogTab = 'system'" :style="buttonStyle(activeLogTab === 'system')">
+        🖥️ System
+        <span x-show="totalSystemLogs > 0" x-text="'(' + totalSystemLogs + ')'"
+          style="font-size: 10px; opacity: 0.7;"></span>
+      </button>
+
+      <div style="flex: 1;"></div>
+
+      <!-- Max lines selector -->
+      <select x-model.number="maxLines" @change="refreshLogs()"
+        style="padding: 4px 8px; border-radius: 4px; border: 1px solid var(--color-border, #333); background: var(--color-bg, #1a1a2e); color: var(--color-text, #ccc); font-size: 12px;">
+        <option value="50">50 lines</option>
+        <option value="100">100 lines</option>
+        <option value="200">200 lines</option>
+        <option value="500">500 lines</option>
+        <option value="1000">1000 lines</option>
+      </select>
+    </div>
+
+    <!-- Category filter badges (clickable) -->
+    <template x-if="sortedCategories.length > 0">
+      <div style="display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; align-items: center;">
+        <span
+          style="font-size: 11px; color: var(--color-text-secondary, #888); margin-right: 4px; font-weight: 600;">Category:</span>
+        <template x-for="[cat, count] in sortedCategories" :key="cat">
+          <button @click="toggleCategoryFilter(cat)"
+            :style="'padding: 3px 10px; border-radius: 12px; font-size: 11px; cursor: pointer; transition: all 0.2s; border: 1px solid ' + getCatColor(cat) + (activeCategory === cat ? '; background: ' + getCatColor(cat) + '; color: #000; font-weight: 600;' : '30; background: ' + getCatColor(cat) + '18; color: ' + getCatColor(cat) + ';')"
+            x-text="cat.toUpperCase() + ' (' + count + ')'">
+          </button>
+        </template>
+        <button x-show="activeCategory" @click="activeCategory = null"
+          style="padding: 3px 10px; border-radius: 12px; font-size: 11px; cursor: pointer; border: 1px solid rgba(255,107,107,0.5); background: transparent; color: #ff6b6b;">
+          ✕ Clear
+        </button>
+      </div>
+    </template>
+
+    <!-- Channel filter badges (clickable, color-coded) -->
+    <template x-if="sortedChannels.length > 0">
+      <div style="display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; align-items: center;">
+        <span
+          style="font-size: 11px; color: var(--color-text-secondary, #888); margin-right: 4px; font-weight: 600;">Channel:</span>
+        <template x-for="[ch, count] in sortedChannels" :key="ch">
+          <button @click="toggleChannelFilter(ch)"
+            :style="'padding: 3px 12px; border-radius: 12px; font-size: 11px; cursor: pointer; transition: all 0.2s; border: 1px solid ' + getChannelColor(ch) + (activeChannel === ch ? '; background: ' + getChannelColor(ch) + '; color: #fff; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.3);' : '40; background: ' + getChannelColor(ch) + '20; color: ' + getChannelColor(ch) + ';')"
+            x-text="getChannelIcon(ch) + ' ' + ch.charAt(0).toUpperCase() + ch.slice(1) + ' (' + count + ')'">
+          </button>
+        </template>
+        <button x-show="activeChannel" @click="activeChannel = null"
+          style="padding: 3px 10px; border-radius: 12px; font-size: 11px; cursor: pointer; border: 1px solid rgba(255,107,107,0.5); background: transparent; color: #ff6b6b;">
+          ✕ Clear
+        </button>
+      </div>
+    </template>
+
+    <!-- Active filter indicator -->
+    <div x-show="activeCategory || activeChannel"
+      style="margin-bottom: 8px; padding: 4px 12px; border-radius: 4px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px;"
+      :style="activeCategory ? 'background: ' + getCatColor(activeCategory) + '20; border: 1px solid ' + getCatColor(activeCategory) + '40; color: ' + getCatColor(activeCategory) : 'background: ' + getChannelColor(activeChannel) + '20; border: 1px solid ' + getChannelColor(activeChannel) + '40; color: ' + getChannelColor(activeChannel)">
+      <span>Showing only:</span>
+      <strong
+        x-text="activeCategory ? activeCategory.toUpperCase() : (getChannelIcon(activeChannel) + ' ' + (activeChannel ? activeChannel.charAt(0).toUpperCase() + activeChannel.slice(1) : ''))"></strong>
+      <span x-text="activeCategory ? 'logs' : 'channel'"></span>
+    </div>
+
+    <!-- Action buttons -->
+    <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+      <button @click="refreshLogs()" :disabled="loading"
+        style="padding: 6px 14px; border-radius: 6px; border: 1px solid var(--color-border, #333); background: transparent; color: var(--color-text, #ccc); font-size: 13px; cursor: pointer;">
+        <span x-text="loading ? '⏳ Loading...' : '🔄 Refresh'"></span>
+      </button>
+      <button @click="toggleAutoRefresh()" :style="buttonStyle(autoRefresh)">
+        <span x-text="autoRefresh ? '⏸️ Stop Auto' : '▶️ Auto Refresh'"></span>
+      </button>
+      <button x-ref="copyBtn" @click="copyLogs()"
+        style="padding: 6px 14px; border-radius: 6px; border: 1px solid var(--color-border, #333); background: transparent; color: var(--color-text, #ccc); font-size: 13px; cursor: pointer;">
+        📋 Copy
+      </button>
+      <button @click="clearLogs()"
+        style="padding: 6px 14px; border-radius: 6px; border: 1px solid rgba(255, 107, 107, 0.5); background: transparent; color: #ff6b6b; font-size: 13px; cursor: pointer;">
+        🗑️ Clear Logs
+      </button>
+    </div>
+
+    <!-- Log viewer -->
+    <div style="position: relative;">
+      <pre x-text="currentLogText" style="
+          background: #0d1117;
+          color: #c9d1d9;
+          border: 1px solid var(--color-border, #333);
+          border-radius: 8px;
+          padding: 16px 20px;
+          font-family: 'Fira Code', 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+          font-size: 12px;
+          line-height: 1.8;
+          max-height: 500px;
+          overflow-y: auto;
+          white-space: pre-wrap;
+          word-wrap: break-word;
+          margin: 0;
+        "></pre>
+    </div>
+  </div>
+</body>
+
+</html>

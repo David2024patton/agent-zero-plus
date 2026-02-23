@@ -1,0 +1,57 @@
+<html>
+
+<head>
+    <title>Swarm Agent Manifests</title>
+</head>
+
+<body>
+    <div x-data>
+        <template x-if="$store.settings.settings">
+            <div>
+                <div class="section-title">Agent Manifests</div>
+                <div class="section-description">
+                    Define reusable agent templates with capabilities and constraints. The swarm tool can reference
+                    these by name.
+                    Format: JSON array of objects with <code>name</code>, <code>system_prompt</code>,
+                    <code>capabilities</code> (array), and <code>constraints</code> (array).
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Agent Manifest Templates</div>
+                        <div class="field-description">
+                            JSON array of saved agent manifests. Each manifest defines an agent's role, capabilities,
+                            and constraints for reuse across swarm invocations.
+                            <br /><br />
+                            <strong>Example:</strong>
+                            <pre style="font-size: 0.8em; margin-top: 0.5em; color: var(--color-text-secondary, #aaa);">[
+  {
+    "name": "Python Expert",
+    "system_prompt": "You are a Python expert...",
+    "capabilities": ["code_review", "debugging", "optimization"],
+    "constraints": ["python_only", "no_side_effects"],
+    "model": ""
+  },
+  {
+    "name": "Data Analyst",
+    "system_prompt": "You analyze data and produce insights...",
+    "capabilities": ["data_analysis", "visualization", "statistics"],
+    "constraints": ["read_only"],
+    "model": "openai/gpt-4o"
+  }
+]</pre>
+                        </div>
+                    </div>
+                    <div class="field-control" style="width: 100%;">
+                        <textarea x-model="$store.settings.settings.swarm_agent_manifests" rows="12"
+                            style="width: 100%; font-family: monospace; font-size: 0.85em;"
+                            placeholder='[{"name": "Agent Name", "system_prompt": "...", "capabilities": [], "constraints": []}]'></textarea>
+                    </div>
+                </div>
+
+            </div>
+        </template>
+    </div>
+</body>
+
+</html>

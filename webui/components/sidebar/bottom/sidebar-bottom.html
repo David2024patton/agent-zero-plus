@@ -1,16 +1,25 @@
 <html>
+
 <head>
   <script type="module">
     import { store } from "/components/sidebar/bottom/sidebar-bottom-store.js";
+    import { store as settingsStore } from "/components/settings/settings-store.js";
   </script>
 </head>
+
 <body>
   <div x-data>
     <template x-if="$store.sidebarBottom">
       <div class="sidebar-bottom-wrapper">
         <!-- Preferences Panel -->
         <x-component path="sidebar/bottom/preferences/preferences-panel.html"></x-component>
-        
+
+        <!-- Logs Shortcut -->
+        <div class="sidebar-logs-btn" @click="$store.settings.open('logs')" title="View Logs">
+          <span class="material-symbols-outlined" style="font-size: 16px;">terminal</span>
+          <span>Logs</span>
+        </div>
+
         <!-- Version Info -->
         <div class="version-info">
           <span id="a0version" x-text="$store.sidebarBottom.versionLabel"></span>
@@ -43,7 +52,27 @@
       font-size: 0.7rem;
       user-select: all;
     }
+
+    .sidebar-logs-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 var(--spacing-md);
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--color-text);
+      opacity: 0.7;
+      font-size: 0.8rem;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .sidebar-logs-btn:hover {
+      opacity: 1;
+      background: rgba(255, 255, 255, 0.08);
+    }
   </style>
 </body>
-</html>
 
+</html>

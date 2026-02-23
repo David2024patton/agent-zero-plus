@@ -1,0 +1,74 @@
+{
+    "id": "discord_channel",
+    "name": "Discord Channel",
+    "description": "Connect Agent Zero to Discord. Responds to DMs, @mentions, command prefixes, and slash commands.",
+    "version": "2.0.0",
+    "type": "channel",
+    "entry": "__init__.py",
+    "config": {
+        "bot_token": {
+            "label": "Bot Token",
+            "description": "Discord bot token from the Developer Portal",
+            "type": "password",
+            "env": "DISCORD_BOT_TOKEN",
+            "default": "",
+            "sensitive": true
+        },
+        "owner_user_id": {
+            "label": "Owner User ID",
+            "description": "Your Discord user ID. Only this user can DM the bot. Leave empty to allow all.",
+            "type": "text",
+            "default": "",
+            "sensitive": false
+        },
+        "command_prefix": {
+            "label": "Command Prefix",
+            "description": "Prefix for legacy text commands (e.g. !a0 hello). Slash commands (/a0) always work.",
+            "type": "text",
+            "default": "!a0",
+            "sensitive": false
+        },
+        "respond_to_dms": {
+            "label": "Respond to DMs",
+            "description": "Allow the bot to respond to direct messages",
+            "type": "switch",
+            "default": true,
+            "sensitive": false
+        },
+        "respond_to_mentions": {
+            "label": "Respond to Mentions",
+            "description": "Allow the bot to respond when @mentioned in channels",
+            "type": "switch",
+            "default": true,
+            "sensitive": false
+        },
+        "thread_bindings_enabled": {
+            "label": "Thread Bindings",
+            "description": "Enable /focus and /unfocus commands to bind Discord threads to sub-agent sessions",
+            "type": "switch",
+            "default": true,
+            "sensitive": false
+        },
+        "thread_bindings_ttl_hours": {
+            "label": "Thread Binding TTL (hours)",
+            "description": "Auto-unfocus threads after this many hours of inactivity (0 = never)",
+            "type": "text",
+            "default": "24",
+            "sensitive": false
+        },
+        "streaming_mode": {
+            "label": "Streaming Mode",
+            "description": "Live stream preview mode: off, partial (edit single message), or block (chunked drafts)",
+            "type": "text",
+            "default": "off",
+            "sensitive": false
+        },
+        "dm_policy": {
+            "label": "DM Policy",
+            "description": "DM access policy: open (anyone), owner (owner only), pairing (code-based approval), disabled",
+            "type": "text",
+            "default": "owner",
+            "sensitive": false
+        }
+    }
+}

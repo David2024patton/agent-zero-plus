@@ -1,0 +1,429 @@
+<html>
+
+<head>
+    <title>Swarm Model Tiers</title>
+</head>
+
+<body>
+    <div x-data="{
+      // --- Premium tier state ---
+      premiumDropdown: false,
+      premiumFetching: false,
+      premiumError: '',
+      premiumModels: [],
+      _premiumTimer: null,
+
+      async fetchPremium() {
+        const s = $store.settings.settings;
+        const provider = s.swarm_tier_premium_provider;
+        if (!provider) return;
+        const apiKey = (s.api_keys || {})[provider] || '';
+        const apiBase = s.swarm_tier_premium_api_base || '';
+        if (!['ollama','lm_studio','nvidia'].includes(provider) && apiKey.length < 10) return;
+        this.premiumFetching = true; this.premiumError = '';
+        try {
+          const csrf = await window.getCsrfToken();
+          const resp = await fetch('/models_list', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify({ provider, api_key: apiKey, api_base: apiBase }) });
+          const data = await resp.json();
+          if (data.ok && data.models?.length) { this.premiumModels = data.models; this.premiumDropdown = true; }
+          else { this.premiumError = data.error || 'No models found'; this.premiumModels = []; this.premiumDropdown = false; }
+        } catch(e) { this.premiumError = 'Failed to connect'; this.premiumDropdown = false; }
+        finally { this.premiumFetching = false; }
+      },
+      debounceFetchPremium() { clearTimeout(this._premiumTimer); this._premiumTimer = setTimeout(() => this.fetchPremium(), 800); },
+
+      // --- Mid tier state ---
+      midDropdown: false,
+      midFetching: false,
+      midError: '',
+      midModels: [],
+      _midTimer: null,
+
+      async fetchMid() {
+        const s = $store.settings.settings;
+        const provider = s.swarm_tier_mid_provider;
+        if (!provider) return;
+        const apiKey = (s.api_keys || {})[provider] || '';
+        const apiBase = s.swarm_tier_mid_api_base || '';
+        if (!['ollama','lm_studio','nvidia'].includes(provider) && apiKey.length < 10) return;
+        this.midFetching = true; this.midError = '';
+        try {
+          const csrf = await window.getCsrfToken();
+          const resp = await fetch('/models_list', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify({ provider, api_key: apiKey, api_base: apiBase }) });
+          const data = await resp.json();
+          if (data.ok && data.models?.length) { this.midModels = data.models; this.midDropdown = true; }
+          else { this.midError = data.error || 'No models found'; this.midModels = []; this.midDropdown = false; }
+        } catch(e) { this.midError = 'Failed to connect'; this.midDropdown = false; }
+        finally { this.midFetching = false; }
+      },
+      debounceFetchMid() { clearTimeout(this._midTimer); this._midTimer = setTimeout(() => this.fetchMid(), 800); },
+
+      // --- Low tier state ---
+      lowDropdown: false,
+      lowFetching: false,
+      lowError: '',
+      lowModels: [],
+      _lowTimer: null,
+
+      async fetchLow() {
+        const s = $store.settings.settings;
+        const provider = s.swarm_tier_low_provider;
+        if (!provider) return;
+        const apiKey = (s.api_keys || {})[provider] || '';
+        const apiBase = s.swarm_tier_low_api_base || '';
+        if (!['ollama','lm_studio','nvidia'].includes(provider) && apiKey.length < 10) return;
+        this.lowFetching = true; this.lowError = '';
+        try {
+          const csrf = await window.getCsrfToken();
+          const resp = await fetch('/models_list', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify({ provider, api_key: apiKey, api_base: apiBase }) });
+          const data = await resp.json();
+          if (data.ok && data.models?.length) { this.lowModels = data.models; this.lowDropdown = true; }
+          else { this.lowError = data.error || 'No models found'; this.lowModels = []; this.lowDropdown = false; }
+        } catch(e) { this.lowError = 'Failed to connect'; this.lowDropdown = false; }
+        finally { this.lowFetching = false; }
+      },
+      debounceFetchLow() { clearTimeout(this._lowTimer); this._lowTimer = setTimeout(() => this.fetchLow(), 800); },
+
+      autoFillEndpoint(tierPrefix) {
+        const endpoints = {
+          openai: 'https://api.openai.com/v1',
+          anthropic: 'https://api.anthropic.com/v1',
+          google: 'https://generativelanguage.googleapis.com/v1beta',
+          gemini: 'https://generativelanguage.googleapis.com/v1beta',
+          groq: 'https://api.groq.com/openai/v1',
+          mistral: 'https://api.mistral.ai/v1',
+          deepseek: 'https://api.deepseek.com/v1',
+          openrouter: 'https://openrouter.ai/api/v1',
+          ollama: 'http://localhost:11434/v1',
+          lm_studio: 'http://localhost:1234/v1',
+          nvidia: 'https://integrate.api.nvidia.com/v1',
+        };
+        const s = $store.settings.settings;
+        const provider = s[tierPrefix + '_provider'];
+        const baseKey = tierPrefix + '_api_base';
+        if (provider && endpoints[provider] && !s[baseKey]) {
+          s[baseKey] = endpoints[provider];
+        }
+      },
+
+      init() {
+        this.$watch('$store.settings.settings.swarm_tier_premium_provider', () => { this.autoFillEndpoint('swarm_tier_premium'); this.debounceFetchPremium(); });
+        this.$watch('$store.settings.settings.swarm_tier_mid_provider', () => { this.autoFillEndpoint('swarm_tier_mid'); this.debounceFetchMid(); });
+        this.$watch('$store.settings.settings.swarm_tier_low_provider', () => { this.autoFillEndpoint('swarm_tier_low'); this.debounceFetchLow(); });
+        this.$watch('$store.settings.settings.api_keys', () => { this.debounceFetchPremium(); this.debounceFetchMid(); this.debounceFetchLow(); });
+      }
+    }">
+        <template x-if="$store.settings.settings">
+            <div>
+                <div class="section-title">Model Tiers</div>
+                <div class="section-description">
+                    Configure three cost tiers for swarm agents. Each tier has its own provider, endpoint, and model.
+                    The API key is shared per provider.
+                </div>
+
+                <!-- ============ PREMIUM TIER ============ -->
+                <div style="border-left: 3px solid #f59e0b; padding-left: 12px; margin-bottom: 16px; margin-top: 12px;">
+                    <div class="field">
+                        <div class="field-label">
+                            <div class="field-title">⭐ Premium Tier</div>
+                            <div class="field-description">Best-quality model for critical/complex tasks (reasoning,
+                                synthesis, code).</div>
+                        </div>
+                        <div class="field-control">
+                            <label class="toggle">
+                                <input type="checkbox" x-model="$store.settings.settings.swarm_tier_premium_enabled" />
+                                <span class="toggler"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div x-show="$store.settings.settings.swarm_tier_premium_enabled">
+                        <div class="field">
+                            <div class="field-label">
+                                <div class="field-title">Provider</div>
+                            </div>
+                            <div class="field-control">
+                                <select x-model="$store.settings.settings.swarm_tier_premium_provider">
+                                    <option value="">-- Select Provider --</option>
+                                    <template x-for="option in $store.settings.additional?.chat_providers"
+                                        :key="option.value">
+                                        <option :value="option.value"
+                                            :selected="option.value === $store.settings.settings.swarm_tier_premium_provider"
+                                            x-text="option.label"></option>
+                                    </template>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <div class="field-label">
+                                <div class="field-title">API Base URL</div>
+                                <div class="field-description">Leave empty for default. Auto-filled for known providers.
+                                </div>
+                            </div>
+                            <div class="field-control">
+                                <input type="text" x-model="$store.settings.settings.swarm_tier_premium_api_base"
+                                    placeholder="Auto-filled from provider" />
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <div class="field-label">
+                                <div class="field-title">API Key</div>
+                                <div class="field-description">Shared with provider — same key used across all tiers
+                                    using this provider.</div>
+                            </div>
+                            <div class="field-control">
+                                <input type="text"
+                                    x-model="$store.settings.settings.api_keys[$store.settings.settings.swarm_tier_premium_provider]"
+                                    autocomplete="off"
+                                    :disabled="!$store.settings.settings.swarm_tier_premium_provider" />
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <div class="field-label">
+                                <div class="field-title">Model</div>
+                                <div class="field-description">
+                                    <template x-if="premiumDropdown">
+                                        <span>Select from available models or <a href="#"
+                                                @click.prevent="premiumDropdown = false; premiumModels = [];"
+                                                style="color: var(--color-accent, #4fc3f7);">switch to manual
+                                                entry</a></span>
+                                    </template>
+                                    <template x-if="!premiumDropdown">
+                                        <span>Exact model name. <a href="#" @click.prevent="fetchPremium()"
+                                                style="color: var(--color-accent, #4fc3f7);">Load available
+                                                models</a></span>
+                                    </template>
+                                </div>
+                            </div>
+                            <div class="field-control" style="display: flex; align-items: center; gap: 8px;">
+                                <select x-show="premiumDropdown"
+                                    @change="$store.settings.settings.swarm_tier_premium_name = $event.target.value"
+                                    style="flex: 1;">
+                                    <option value="">-- Select a model --</option>
+                                    <template x-for="m in premiumModels" :key="m.id">
+                                        <option :value="m.id"
+                                            :selected="m.id === $store.settings.settings.swarm_tier_premium_name"
+                                            x-text="m.name || m.id"></option>
+                                    </template>
+                                </select>
+                                <input x-show="!premiumDropdown" type="text"
+                                    x-model="$store.settings.settings.swarm_tier_premium_name"
+                                    placeholder="e.g. anthropic/claude-sonnet-4" style="flex: 1;" />
+                                <span x-show="premiumFetching" style="font-size: 12px; opacity: 0.7;">⏳
+                                    Loading...</span>
+                            </div>
+                            <template x-if="premiumError && !premiumDropdown">
+                                <div style="font-size: 11px; color: #ff6b6b; margin-top: 4px; padding-left: 4px;"
+                                    x-text="premiumError"></div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ MID TIER ============ -->
+                <div style="border-left: 3px solid #3b82f6; padding-left: 12px; margin-bottom: 16px;">
+                    <div class="field">
+                        <div class="field-label">
+                            <div class="field-title">🔹 Mid Tier</div>
+                            <div class="field-description">Balanced model for general-purpose tasks. Good quality at
+                                moderate cost.</div>
+                        </div>
+                        <div class="field-control">
+                            <label class="toggle">
+                                <input type="checkbox" x-model="$store.settings.settings.swarm_tier_mid_enabled" />
+                                <span class="toggler"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div x-show="$store.settings.settings.swarm_tier_mid_enabled">
+                        <div class="field">
+                            <div class="field-label">
+                                <div class="field-title">Provider</div>
+                            </div>
+                            <div class="field-control">
+                                <select x-model="$store.settings.settings.swarm_tier_mid_provider">
+                                    <option value="">-- Select Provider --</option>
+                                    <template x-for="option in $store.settings.additional?.chat_providers"
+                                        :key="option.value">
+                                        <option :value="option.value"
+                                            :selected="option.value === $store.settings.settings.swarm_tier_mid_provider"
+                                            x-text="option.label"></option>
+                                    </template>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <div class="field-label">
+                                <div class="field-title">API Base URL</div>
+                                <div class="field-description">Leave empty for default. Auto-filled for known providers.
+                                </div>
+                            </div>
+                            <div class="field-control">
+                                <input type="text" x-model="$store.settings.settings.swarm_tier_mid_api_base"
+                                    placeholder="Auto-filled from provider" />
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <div class="field-label">
+                                <div class="field-title">API Key</div>
+                                <div class="field-description">Shared with provider.</div>
+                            </div>
+                            <div class="field-control">
+                                <input type="text"
+                                    x-model="$store.settings.settings.api_keys[$store.settings.settings.swarm_tier_mid_provider]"
+                                    autocomplete="off" :disabled="!$store.settings.settings.swarm_tier_mid_provider" />
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <div class="field-label">
+                                <div class="field-title">Model</div>
+                                <div class="field-description">
+                                    <template x-if="midDropdown">
+                                        <span>Select from available models or <a href="#"
+                                                @click.prevent="midDropdown = false; midModels = [];"
+                                                style="color: var(--color-accent, #4fc3f7);">switch to manual
+                                                entry</a></span>
+                                    </template>
+                                    <template x-if="!midDropdown">
+                                        <span>Exact model name. <a href="#" @click.prevent="fetchMid()"
+                                                style="color: var(--color-accent, #4fc3f7);">Load available
+                                                models</a></span>
+                                    </template>
+                                </div>
+                            </div>
+                            <div class="field-control" style="display: flex; align-items: center; gap: 8px;">
+                                <select x-show="midDropdown"
+                                    @change="$store.settings.settings.swarm_tier_mid_name = $event.target.value"
+                                    style="flex: 1;">
+                                    <option value="">-- Select a model --</option>
+                                    <template x-for="m in midModels" :key="m.id">
+                                        <option :value="m.id"
+                                            :selected="m.id === $store.settings.settings.swarm_tier_mid_name"
+                                            x-text="m.name || m.id"></option>
+                                    </template>
+                                </select>
+                                <input x-show="!midDropdown" type="text"
+                                    x-model="$store.settings.settings.swarm_tier_mid_name"
+                                    placeholder="e.g. openai/gpt-4o-mini" style="flex: 1;" />
+                                <span x-show="midFetching" style="font-size: 12px; opacity: 0.7;">⏳ Loading...</span>
+                            </div>
+                            <template x-if="midError && !midDropdown">
+                                <div style="font-size: 11px; color: #ff6b6b; margin-top: 4px; padding-left: 4px;"
+                                    x-text="midError"></div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ LOW TIER ============ -->
+                <div style="border-left: 3px solid #10b981; padding-left: 12px; margin-bottom: 16px;">
+                    <div class="field">
+                        <div class="field-label">
+                            <div class="field-title">💚 Low Tier</div>
+                            <div class="field-description">Fast, cheap model for simple tasks (summarization,
+                                extraction, formatting).</div>
+                        </div>
+                        <div class="field-control">
+                            <label class="toggle">
+                                <input type="checkbox" x-model="$store.settings.settings.swarm_tier_low_enabled" />
+                                <span class="toggler"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div x-show="$store.settings.settings.swarm_tier_low_enabled">
+                        <div class="field">
+                            <div class="field-label">
+                                <div class="field-title">Provider</div>
+                            </div>
+                            <div class="field-control">
+                                <select x-model="$store.settings.settings.swarm_tier_low_provider">
+                                    <option value="">-- Select Provider --</option>
+                                    <template x-for="option in $store.settings.additional?.chat_providers"
+                                        :key="option.value">
+                                        <option :value="option.value"
+                                            :selected="option.value === $store.settings.settings.swarm_tier_low_provider"
+                                            x-text="option.label"></option>
+                                    </template>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <div class="field-label">
+                                <div class="field-title">API Base URL</div>
+                                <div class="field-description">Leave empty for default. Auto-filled for known providers.
+                                </div>
+                            </div>
+                            <div class="field-control">
+                                <input type="text" x-model="$store.settings.settings.swarm_tier_low_api_base"
+                                    placeholder="Auto-filled from provider" />
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <div class="field-label">
+                                <div class="field-title">API Key</div>
+                                <div class="field-description">Shared with provider.</div>
+                            </div>
+                            <div class="field-control">
+                                <input type="text"
+                                    x-model="$store.settings.settings.api_keys[$store.settings.settings.swarm_tier_low_provider]"
+                                    autocomplete="off" :disabled="!$store.settings.settings.swarm_tier_low_provider" />
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <div class="field-label">
+                                <div class="field-title">Model</div>
+                                <div class="field-description">
+                                    <template x-if="lowDropdown">
+                                        <span>Select from available models or <a href="#"
+                                                @click.prevent="lowDropdown = false; lowModels = [];"
+                                                style="color: var(--color-accent, #4fc3f7);">switch to manual
+                                                entry</a></span>
+                                    </template>
+                                    <template x-if="!lowDropdown">
+                                        <span>Exact model name. <a href="#" @click.prevent="fetchLow()"
+                                                style="color: var(--color-accent, #4fc3f7);">Load available
+                                                models</a></span>
+                                    </template>
+                                </div>
+                            </div>
+                            <div class="field-control" style="display: flex; align-items: center; gap: 8px;">
+                                <select x-show="lowDropdown"
+                                    @change="$store.settings.settings.swarm_tier_low_name = $event.target.value"
+                                    style="flex: 1;">
+                                    <option value="">-- Select a model --</option>
+                                    <template x-for="m in lowModels" :key="m.id">
+                                        <option :value="m.id"
+                                            :selected="m.id === $store.settings.settings.swarm_tier_low_name"
+                                            x-text="m.name || m.id"></option>
+                                    </template>
+                                </select>
+                                <input x-show="!lowDropdown" type="text"
+                                    x-model="$store.settings.settings.swarm_tier_low_name"
+                                    placeholder="e.g. openai/gpt-3.5-turbo" style="flex: 1;" />
+                                <span x-show="lowFetching" style="font-size: 12px; opacity: 0.7;">⏳ Loading...</span>
+                            </div>
+                            <template x-if="lowError && !lowDropdown">
+                                <div style="font-size: 11px; color: #ff6b6b; margin-top: 4px; padding-left: 4px;"
+                                    x-text="lowError"></div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </template>
+    </div>
+</body>
+
+</html>

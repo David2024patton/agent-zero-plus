@@ -1,0 +1,91 @@
+<html>
+
+<head>
+    <title>Telegram Plugin</title>
+</head>
+
+<body>
+    <div x-data>
+        <template x-if="$store.settings">
+            <div>
+                <div class="section-title">Telegram Bot</div>
+                <div class="section-description">
+                    Connect Agent Zero to Telegram. Supports private messages, group mentions,
+                    voice notes, and rich media. Requires <code>python-telegram-bot</code>.
+                    <br><br>
+                    📖 <strong>Setup Guide:</strong>
+                    <a href="https://core.telegram.org/bots#how-do-i-create-a-bot" target="_blank" rel="noopener">
+                        How to create a Telegram Bot</a> —
+                    Open Telegram, message <code>@BotFather</code>, use <code>/newbot</code> to create your bot,
+                    then paste the token below.
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Enable Telegram Plugin</div>
+                        <div class="field-description">Start the Telegram bot when Agent Zero launches.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="$store.settings.settings.plugin_telegram_enabled" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Bot Token</div>
+                        <div class="field-description">Telegram Bot API token from @BotFather.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="password" class="text-input"
+                            x-model="$store.settings.settings.plugin_telegram_bot_token"
+                            placeholder="Enter Telegram bot token" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Allowed Users</div>
+                        <div class="field-description">Comma-separated Telegram user IDs. Leave empty to allow all.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <input type="text" class="text-input"
+                            x-model="$store.settings.settings.plugin_telegram_allowed_users"
+                            placeholder="123456789, 987654321" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Respond to Private Messages</div>
+                        <div class="field-description">Process direct messages sent to the bot.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="$store.settings.settings.plugin_telegram_respond_private" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Respond in Groups</div>
+                        <div class="field-description">Process messages in group/supergroup chats.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="$store.settings.settings.plugin_telegram_respond_groups" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+</body>
+
+</html>

@@ -15,6 +15,10 @@ class Delegation(Tool):
             # initialize default config
             config = initialize_agent()
 
+            # override chat model with subagent model if configured
+            if config.subagent_model:
+                config.chat_model = config.subagent_model
+
             # set subordinate prompt profile if provided, if not, keep original
             agent_profile = kwargs.get("profile", kwargs.get("agent_profile", ""))
             if agent_profile:
@@ -30,8 +34,23 @@ class Delegation(Tool):
         subordinate: Agent = self.agent.get_data(Agent.DATA_NAME_SUBORDINATE)  # type: ignore
         subordinate.hist_add_user_message(UserMessage(message=message, attachments=[]))
 
+        # Log task delegation details
+        sub_model = f"{subordinate.config.chat_model.provider}/{subordinate.config.chat_model.name}"
+        self.log.update(
+            task=message[:500],
+            subordinate_model=sub_model,
+            status="running",
+        )
+
         # run subordinate monologue
         result = await subordinate.monologue()
+
+        # Log task completion with result summary
+        result_preview = result[:500] if result else "(empty)"
+        self.log.update(
+            status="completed",
+            result=result_preview,
+        )
 
         # seal the subordinate's current topic so messages move to `topics` for compression
         subordinate.history.new_topic()
@@ -47,9 +66,18 @@ class Delegation(Tool):
         return Response(message=result, break_loop=False, additional=additional)
 
     def get_log_object(self):
+        # Determine subordinate model
+        sub_model = ""
+        if self.agent.config.subagent_model:
+            sub_model = f"{self.agent.config.subagent_model.provider}/{self.agent.config.subagent_model.name}"
+        else:
+            sub_model = f"{self.agent.config.chat_model.provider}/{self.agent.config.chat_model.name}"
+        kvps = dict(self.args) if self.args else {}
+        kvps["subordinate_model"] = sub_model
         return self.agent.context.log.log(
             type="subagent",
             heading=f"icon://communication {self.agent.agent_name}: Calling Subordinate Agent",
             content="",
-            kvps=self.args,
+            kvps=kvps,
         )
+

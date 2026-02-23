@@ -1,0 +1,70 @@
+<html>
+
+<head>
+    <title>Plugins</title>
+</head>
+
+<body>
+    <div x-data>
+        <template x-if="$store.settings.settings">
+            <div>
+                <!-- List Plugins -->
+                <div x-show="$store.settings.activeSubTab === 'plugins-list'">
+                    <x-component path="settings/plugins/list.html"></x-component>
+                </div>
+
+                <!-- Import Plugins -->
+                <div x-show="$store.settings.activeSubTab === 'plugins-import'">
+                    <x-component path="settings/plugins/import.html"></x-component>
+                </div>
+
+                <!-- Discord -->
+                <div x-show="$store.settings.activeSubTab === 'plugins-discord'">
+                    <x-component path="settings/plugins/discord.html"></x-component>
+                </div>
+
+                <!-- Email -->
+                <div x-show="$store.settings.activeSubTab === 'plugins-email'">
+                    <x-component path="settings/plugins/email.html"></x-component>
+                </div>
+
+                <!-- Telegram -->
+                <div x-show="$store.settings.activeSubTab === 'plugins-telegram'">
+                    <x-component path="settings/plugins/telegram.html"></x-component>
+                </div>
+
+                <!-- Slack -->
+                <div x-show="$store.settings.activeSubTab === 'plugins-slack'">
+                    <x-component path="settings/plugins/slack.html"></x-component>
+                </div>
+
+                <!-- Teams -->
+                <div x-show="$store.settings.activeSubTab === 'plugins-teams'">
+                    <x-component path="settings/plugins/teams.html"></x-component>
+                </div>
+
+                <!-- WhatsApp -->
+                <div x-show="$store.settings.activeSubTab === 'plugins-whatsapp'">
+                    <x-component path="settings/plugins/whatsapp.html"></x-component>
+                </div>
+
+                <!-- Matrix -->
+                <div x-show="$store.settings.activeSubTab === 'plugins-matrix'">
+                    <x-component path="settings/plugins/matrix.html"></x-component>
+                </div>
+
+                <!-- Webhook -->
+                <div x-show="$store.settings.activeSubTab === 'plugins-webhook'">
+                    <x-component path="settings/plugins/webhook.html"></x-component>
+                </div>
+
+                <!-- OpenClaw Features -->
+                <div x-show="$store.settings.activeSubTab === 'plugins-openclaw'">
+                    <x-component path="settings/plugins/openclaw-features.html"></x-component>
+                </div>
+            </div>
+        </template>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,117 @@
+<html>
+
+<head>
+    <title>Slack Plugin</title>
+</head>
+
+<body>
+    <div x-data>
+        <template x-if="$store.settings">
+            <div>
+                <div class="section-title">Slack Bot</div>
+                <div class="section-description">
+                    Connect Agent Zero to Slack using Socket Mode. Supports DMs, @mentions,
+                    threaded replies, and channel messages. Requires <code>slack-bolt</code>.
+                    <br><br>
+                    📖 <strong>Setup Guide:</strong>
+                    <a href="https://api.slack.com/start/quickstart" target="_blank" rel="noopener">
+                        Slack App Quickstart</a> —
+                    Create a new app at <a href="https://api.slack.com/apps" target="_blank"
+                        rel="noopener">api.slack.com/apps</a>,
+                    enable <a href="https://api.slack.com/apis/connections/socket" target="_blank" rel="noopener">Socket
+                        Mode</a>,
+                    add Bot Token Scopes (<code>chat:write</code>, <code>app_mentions:read</code>,
+                    <code>im:history</code>),
+                    then copy your Bot Token (xoxb-...) and App-Level Token (xapp-...) below.
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Enable Slack Plugin</div>
+                        <div class="field-description">Start the Slack bot when Agent Zero launches.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="$store.settings.settings.plugin_slack_enabled" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Bot Token</div>
+                        <div class="field-description">Slack Bot OAuth token (xoxb-...).</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="password" class="text-input"
+                            x-model="$store.settings.settings.plugin_slack_bot_token" placeholder="xoxb-..." />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">App-Level Token</div>
+                        <div class="field-description">Slack App-Level token for Socket Mode (xapp-...).</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="password" class="text-input"
+                            x-model="$store.settings.settings.plugin_slack_app_token" placeholder="xapp-..." />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Signing Secret</div>
+                        <div class="field-description">Slack app signing secret for request verification.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="password" class="text-input"
+                            x-model="$store.settings.settings.plugin_slack_signing_secret"
+                            placeholder="Enter signing secret" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Allowed Channels</div>
+                        <div class="field-description">Comma-separated channel IDs. Leave empty to allow all.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="text" class="text-input"
+                            x-model="$store.settings.settings.plugin_slack_allowed_channels"
+                            placeholder="C01234567, C09876543" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Respond to DMs</div>
+                        <div class="field-description">Process direct messages sent to the bot.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="$store.settings.settings.plugin_slack_respond_dms" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Respond to @mentions</div>
+                        <div class="field-description">Process messages where the bot is mentioned.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="$store.settings.settings.plugin_slack_respond_mentions" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+</body>
+
+</html>

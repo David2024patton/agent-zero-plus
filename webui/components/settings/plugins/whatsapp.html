@@ -1,0 +1,65 @@
+<html>
+
+<head>
+    <title>WhatsApp Plugin</title>
+</head>
+
+<body>
+    <div x-data>
+        <template x-if="$store.settings">
+            <div>
+                <div class="section-title">WhatsApp</div>
+                <div class="section-description">
+                    Connect Agent Zero to WhatsApp using the Baileys library. Supports text,
+                    media, and group messages with QR-code pairing for authentication.
+                    <br><br>
+                    📖 <strong>Setup Guide:</strong>
+                    <a href="https://github.com/WhiskeySockets/Baileys#readme" target="_blank" rel="noopener">
+                        Baileys Documentation</a> —
+                    No API keys needed! When first enabled, a QR code will appear in the logs.
+                    Scan it with WhatsApp on your phone (Settings → Linked Devices → Link a Device) to pair.
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Enable WhatsApp Plugin</div>
+                        <div class="field-description">Start the WhatsApp bridge when Agent Zero launches.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="$store.settings.settings.plugin_whatsapp_enabled" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Session Name</div>
+                        <div class="field-description">Name for the WhatsApp session (used for multi-device pairing).
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <input type="text" class="text-input"
+                            x-model="$store.settings.settings.plugin_whatsapp_session_name" placeholder="default" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Allowed Numbers</div>
+                        <div class="field-description">Comma-separated phone numbers in international format. Leave
+                            empty to allow all.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="text" class="text-input"
+                            x-model="$store.settings.settings.plugin_whatsapp_allowed_numbers"
+                            placeholder="+1234567890, +0987654321" />
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+</body>
+
+</html>

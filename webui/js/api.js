@@ -80,8 +80,8 @@ export function getRuntimeId() {
   if (runtimeIdCache) return runtimeIdCache;
   const injected =
     window.runtimeInfo &&
-    typeof window.runtimeInfo.id === "string" &&
-    window.runtimeInfo.id.length > 0
+      typeof window.runtimeInfo.id === "string" &&
+      window.runtimeInfo.id.length > 0
       ? window.runtimeInfo.id
       : null;
   return injected;
@@ -91,6 +91,10 @@ export function invalidateCsrfToken() {
   csrfToken = null;
   csrfTokenPromise = null;
 }
+
+// Expose for inline Alpine.js scripts in settings components
+window.getCsrfToken = function () { return getCsrfToken(); };
+window.callJsonApi = function (endpoint, data) { return callJsonApi(endpoint, data); };
 
 /**
  * Get the CSRF token for API requests
@@ -158,8 +162,8 @@ export async function getCsrfToken() {
       }
       const injectedRuntimeId =
         window.runtimeInfo &&
-        typeof window.runtimeInfo.id === "string" &&
-        window.runtimeInfo.id.length > 0
+          typeof window.runtimeInfo.id === "string" &&
+          window.runtimeInfo.id.length > 0
           ? window.runtimeInfo.id
           : null;
       const cookieRuntimeId = runtimeId || injectedRuntimeId;

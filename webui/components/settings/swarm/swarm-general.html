@@ -1,0 +1,103 @@
+<html>
+
+<head>
+    <title>Swarm General</title>
+</head>
+
+<body>
+    <div x-data>
+        <template x-if="$store.settings.settings">
+            <div>
+                <div class="section-title">General</div>
+                <div class="section-description">
+                    Configure swarm orchestration defaults. The swarm tool spawns multi-agent workflows via the Swarms
+                    framework.
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Swarm Enabled</div>
+                        <div class="field-description">
+                            Master switch for the swarm tool. When disabled, the agent cannot use swarm orchestration.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="$store.settings.settings.swarm_enabled" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Default Swarm Type</div>
+                        <div class="field-description">
+                            The default swarm architecture when no type is specified. Sequential chains agents one after
+                            another; Concurrent runs them in parallel; Mixture uses a mixture-of-agents pattern;
+                            Hierarchical uses a boss/worker hierarchy.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <select x-model="$store.settings.settings.swarm_default_type">
+                            <option value="sequential">Sequential</option>
+                            <option value="concurrent">Concurrent</option>
+                            <option value="mixture">Mixture of Agents</option>
+                            <option value="hierarchical">Hierarchical</option>
+                            <option value="dynamic">Dynamic (Role Reassignment)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Default Model</div>
+                        <div class="field-description">
+                            Default LLM model for swarm agents. Leave empty to use the main chat model. Override
+                            per-agent via the agent definition.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <input type="text" x-model="$store.settings.settings.swarm_default_model"
+                            placeholder="e.g. openai/gpt-4o or leave empty" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Output Format</div>
+                        <div class="field-description">
+                            How swarm results are formatted before being returned to the agent.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <select x-model="$store.settings.settings.swarm_output_format">
+                            <option value="markdown">Markdown</option>
+                            <option value="json">JSON</option>
+                            <option value="plain">Plain Text</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Dynamic Role Reassignment</div>
+                        <div class="field-description">
+                            When enabled with the Dynamic swarm type, agents can be reassigned to different roles
+                            mid-execution based on task requirements.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="$store.settings.settings.swarm_dynamic_reassignment" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+        </template>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,63 @@
+<html>
+
+<head>
+    <title>Webhook Plugin</title>
+</head>
+
+<body>
+    <div x-data>
+        <template x-if="$store.settings">
+            <div>
+                <div class="section-title">Webhook</div>
+                <div class="section-description">
+                    Expose an HTTP endpoint for incoming webhooks. External services can send
+                    JSON payloads to trigger Agent Zero conversations programmatically.
+                    <br><br>
+                    📖 <strong>Setup Guide:</strong>
+                    No external setup needed! Enable the plugin, set a path and optional auth token below.
+                    Then POST JSON to <code>http://your-server:port/webhook/agent</code> with
+                    <code>{"message": "your text"}</code> to trigger Agent Zero.
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Enable Webhook Plugin</div>
+                        <div class="field-description">Activate the webhook endpoint when Agent Zero launches.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="$store.settings.settings.plugin_webhook_enabled" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Webhook Path</div>
+                        <div class="field-description">URL path for the webhook endpoint (e.g. /webhook/agent).</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="text" class="text-input" x-model="$store.settings.settings.plugin_webhook_path"
+                            placeholder="/webhook/agent" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Auth Token</div>
+                        <div class="field-description">Bearer token for authenticating webhook requests. Leave empty to
+                            disable auth.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="password" class="text-input"
+                            x-model="$store.settings.settings.plugin_webhook_auth_token"
+                            placeholder="Enter webhook auth token" />
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+</body>
+
+</html>

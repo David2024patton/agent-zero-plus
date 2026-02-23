@@ -1,0 +1,46 @@
+{
+    "id": "matrix_channel",
+    "name": "Matrix",
+    "description": "Connect Agent Zero to Matrix/Element. Decentralized, self-hosted messaging with E2EE support.",
+    "version": "1.0.0",
+    "type": "channel",
+    "entry": "__init__.py",
+    "config": {
+        "homeserver_url": {
+            "label": "Homeserver URL",
+            "description": "Matrix homeserver URL (e.g. https://matrix.org)",
+            "type": "text",
+            "default": "https://matrix.org",
+            "sensitive": false
+        },
+        "user_id": {
+            "label": "Bot User ID",
+            "description": "Full Matrix user ID (e.g. @mybot:matrix.org)",
+            "type": "text",
+            "default": "",
+            "sensitive": false
+        },
+        "access_token": {
+            "label": "Access Token",
+            "description": "Matrix access token for the bot account",
+            "type": "password",
+            "env": "MATRIX_ACCESS_TOKEN",
+            "default": "",
+            "sensitive": true
+        },
+        "allowed_rooms": {
+            "label": "Allowed Room IDs",
+            "description": "Comma-separated room IDs the bot can respond in. Leave empty for all.",
+            "type": "text",
+            "default": "",
+            "sensitive": false
+        },
+        "respond_to_dms": {
+            "label": "Respond to DMs",
+            "description": "Allow the bot to respond to direct messages",
+            "type": "switch",
+            "default": true,
+            "sensitive": false
+        }
+    }
+}

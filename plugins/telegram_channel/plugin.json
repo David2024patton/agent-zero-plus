@@ -1,0 +1,39 @@
+{
+    "id": "telegram_channel",
+    "name": "Telegram",
+    "description": "Connect Agent Zero to Telegram. Responds to private messages, group mentions, and bot commands.",
+    "version": "1.0.0",
+    "type": "channel",
+    "entry": "__init__.py",
+    "config": {
+        "bot_token": {
+            "label": "Bot Token",
+            "description": "Telegram bot token from @BotFather",
+            "type": "password",
+            "env": "TELEGRAM_BOT_TOKEN",
+            "default": "",
+            "sensitive": true
+        },
+        "allowed_users": {
+            "label": "Allowed User IDs",
+            "description": "Comma-separated Telegram user IDs allowed to interact. Leave empty for all.",
+            "type": "text",
+            "default": "",
+            "sensitive": false
+        },
+        "respond_to_groups": {
+            "label": "Respond in Groups",
+            "description": "Allow the bot to respond when mentioned in group chats",
+            "type": "switch",
+            "default": true,
+            "sensitive": false
+        },
+        "respond_to_private": {
+            "label": "Respond to Private Messages",
+            "description": "Allow the bot to respond to private/direct messages",
+            "type": "switch",
+            "default": true,
+            "sensitive": false
+        }
+    }
+}

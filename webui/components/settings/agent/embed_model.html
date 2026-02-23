@@ -1,104 +1,238 @@
 <html>
-  <head>
-    <title>Embedding Model</title>
-  </head>
 
-  <body>
-    <div x-data>
-      <template x-if="$store.settings.settings">
-        <div>
-          <div class="section-title">Embedding Model</div>
-          <div class="section-description">
-            Settings for the embedding model used by the framework
+<head>
+  <title>Embedding Model</title>
+</head>
+
+<body>
+  <div x-data="{
+      useDropdown: false,
+      fetchingModels: false,
+      fetchError: '',
+      modelOptions: [],
+      _debounceTimer: null,
+
+      async fetchModels() {
+        const settings = $store.settings.settings;
+        const provider = settings.embed_model_provider;
+        const apiKey = (settings.api_keys || {})[provider] || '';
+        const apiBase = settings.embed_model_api_base || '';
+
+        if (!provider) return;
+        // For non-local providers, require an API key
+        if (!['ollama', 'lm_studio', 'nvidia'].includes(provider) && apiKey.length < 10) return;
+
+        this.fetchingModels = true;
+        this.fetchError = '';
+        try {
+          const csrfToken = await window.getCsrfToken();
+          const resp = await fetch('/models_list', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+            body: JSON.stringify({ provider, api_key: apiKey, api_base: apiBase })
+          });
+          const data = await resp.json();
+          if (data.ok && data.models?.length) {
+            this.modelOptions = data.models;
+            this.useDropdown = true;
+          } else {
+            this.fetchError = data.error || 'No models found';
+            this.modelOptions = [];
+            this.useDropdown = false;
+          }
+        } catch (e) {
+          this.fetchError = 'Failed to connect';
+          this.useDropdown = false;
+        } finally {
+          this.fetchingModels = false;
+        }
+      },
+
+      debouncedFetch() {
+        clearTimeout(this._debounceTimer);
+        this._debounceTimer = setTimeout(() => this.fetchModels(), 800);
+      },
+
+      onSelectChange(e) {
+        $store.settings.settings.embed_model_name = e.target.value;
+      },
+
+      switchToManual() {
+        this.useDropdown = false;
+        this.modelOptions = [];
+      },
+
+      autoFillEndpoint() {
+        const endpoints = {
+          openai: 'https://api.openai.com/v1',
+          google: 'https://generativelanguage.googleapis.com/v1beta',
+          gemini: 'https://generativelanguage.googleapis.com/v1beta',
+          groq: 'https://api.groq.com/openai/v1',
+          mistral: 'https://api.mistral.ai/v1',
+          deepseek: 'https://api.deepseek.com/v1',
+          openrouter: 'https://openrouter.ai/api/v1',
+          ollama: 'http://localhost:11434/v1',
+          lm_studio: 'http://localhost:1234/v1',
+          nvidia: 'https://integrate.api.nvidia.com/v1',
+          sambanova: 'https://api.sambanova.ai/v1',
+        };
+        const provider = $store.settings.settings.embed_model_provider;
+        const current = ($store.settings.settings.embed_model_api_base || '').trim();
+        // Build list of all known URLs including Docker variants
+        const allKnown = new Set();
+        Object.values(endpoints).forEach(u => {
+          allKnown.add(u);
+          allKnown.add(u.replace('localhost', 'host.docker.internal'));
+          // Also match without trailing /v1 or /v1beta
+          allKnown.add(u.replace(/\/v1(beta)?$/, ''));
+          allKnown.add(u.replace('localhost', 'host.docker.internal').replace(/\/v1(beta)?$/, ''));
+        });
+        // Auto-fill if empty or currently set to any known provider URL
+        if (provider && endpoints[provider] && (!current || allKnown.has(current))) {
+          $store.settings.settings.embed_model_api_base = endpoints[provider];
+        }
+      },
+
+      init() {
+        // Watch provider changes
+        this.$watch('$store.settings.settings.embed_model_provider', (val) => {
+          this.autoFillEndpoint();
+          this.debouncedFetch();
+        });
+        // Watch API key changes
+        this.$watch('$store.settings.settings.api_keys', () => {
+          this.debouncedFetch();
+        });
+      }
+    }">
+    <template x-if="$store.settings.settings">
+      <div>
+        <div class="section-title">Embedding Model</div>
+        <div class="section-description">
+          Settings for the embedding model used by the framework
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Embedding model provider</div>
+            <div class="field-description">Select provider for embedding model used by the framework</div>
           </div>
-
-          <div class="field">
-            <div class="field-label">
-              <div class="field-title">Embedding model provider</div>
-              <div class="field-description">Select provider for embedding model used by the framework</div>
-            </div>
-            <div class="field-control">
-              <select x-model="$store.settings.settings.embed_model_provider">
-                <template x-for="option in $store.settings.additional?.embedding_providers" :key="option.value">
-                  <option :value="option.value" :selected="option.value === $store.settings.settings.embed_model_provider" x-text="option.label"></option>
-                </template>
-              </select>
-            </div>
-          </div>
-
-          <div class="field">
-            <div class="field-label">
-              <div class="field-title">Embedding model name</div>
-              <div class="field-description">Exact name of model from selected provider</div>
-            </div>
-            <div class="field-control">
-              <input type="text" x-model="$store.settings.settings.embed_model_name" />
-            </div>
-          </div>
-
-          <div class="field">
-            <div class="field-label">
-              <div class="field-title">API key</div>
-              <div class="field-description">API key for the selected embedding model provider</div>
-            </div>
-            <div class="field-control">
-              <input
-                type="text"
-                x-model="$store.settings.settings.api_keys[$store.settings.settings.embed_model_provider]"
-                autocomplete="off"
-              />
-            </div>
-          </div>
-
-          <div class="field">
-            <div class="field-label">
-              <div class="field-title">Embedding model API base URL</div>
-              <div class="field-description">
-                API base URL for embedding model. Leave empty for default. Only relevant for Azure, local and custom (other) providers.
-              </div>
-            </div>
-            <div class="field-control">
-              <input type="text" x-model="$store.settings.settings.embed_model_api_base" />
-            </div>
-          </div>
-
-          <div class="field">
-            <div class="field-label">
-              <div class="field-title">Requests per minute limit</div>
-              <div class="field-description">
-                Limits the number of requests per minute to the embedding model. Waits if the limit is exceeded. Set to 0 to disable rate limiting.
-              </div>
-            </div>
-            <div class="field-control">
-              <input type="number" x-model.number="$store.settings.settings.embed_model_rl_requests" />
-            </div>
-          </div>
-
-          <div class="field">
-            <div class="field-label">
-              <div class="field-title">Input tokens per minute limit</div>
-              <div class="field-description">
-                Limits the number of input tokens per minute to the embedding model. Waits if the limit is exceeded. Set to 0 to disable rate limiting.
-              </div>
-            </div>
-            <div class="field-control">
-              <input type="number" x-model.number="$store.settings.settings.embed_model_rl_input" />
-            </div>
-          </div>
-
-          <div class="field field-full">
-            <div class="field-label">
-              <div class="field-title">Embedding model additional parameters</div>
-              <div class="field-description">
-                Any other parameters supported by <a href='https://docs.litellm.ai/docs/set_keys' target='_blank'>LiteLLM</a>. Format is KEY=VALUE on individual lines, like .env file. Value can also contain JSON objects - when unquoted, it is treated as object, number etc., when quoted, it is treated as string.
-              </div>
-            </div>
-            <div class="field-control">
-              <textarea x-model="$store.settings.settings.embed_model_kwargs"></textarea>
-            </div>
+          <div class="field-control">
+            <select x-model="$store.settings.settings.embed_model_provider">
+              <template x-for="option in $store.settings.additional?.embedding_providers" :key="option.value">
+                <option :value="option.value" :selected="option.value === $store.settings.settings.embed_model_provider"
+                  x-text="option.label"></option>
+              </template>
+            </select>
           </div>
         </div>
-      </template>
-    </div>
-  </body>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Embedding model name</div>
+            <div class="field-description">
+              <template x-if="useDropdown">
+                <span>Select from available models or
+                  <a href="#" @click.prevent="switchToManual()" style="color: var(--color-accent, #4fc3f7);">switch to
+                    manual entry</a>
+                </span>
+              </template>
+              <template x-if="!useDropdown">
+                <span>Exact name of model from selected provider.
+                  <a href="#" @click.prevent="fetchModels()" style="color: var(--color-accent, #4fc3f7);">Load available
+                    models</a>
+                </span>
+              </template>
+            </div>
+          </div>
+          <div class="field-control" style="display: flex; align-items: center; gap: 8px;">
+            <!-- Dropdown mode -->
+            <select x-show="useDropdown" @change="onSelectChange($event)" style="flex: 1;">
+              <option value="">-- Select a model --</option>
+              <template x-for="m in modelOptions" :key="m.id">
+                <option :value="m.id" :selected="m.id === $store.settings.settings.embed_model_name"
+                  x-text="m.name || m.id"></option>
+              </template>
+            </select>
+            <!-- Manual input mode -->
+            <input x-show="!useDropdown" type="text" x-model="$store.settings.settings.embed_model_name"
+              placeholder="e.g. text-embedding-3-small or nomic-embed-text" style="flex: 1;" />
+            <!-- Loading indicator -->
+            <span x-show="fetchingModels" style="font-size: 12px; opacity: 0.7;">⏳ Loading...</span>
+          </div>
+          <template x-if="fetchError && !useDropdown">
+            <div style="font-size: 11px; color: #ff6b6b; margin-top: 4px; padding-left: 4px;" x-text="fetchError"></div>
+          </template>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">API key</div>
+            <div class="field-description">API key for the selected embedding model provider</div>
+          </div>
+          <div class="field-control">
+            <input type="text"
+              x-model="$store.settings.settings.api_keys[$store.settings.settings.embed_model_provider]"
+              autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Embedding model API base URL</div>
+            <div class="field-description">
+              API base URL for embedding model. Leave empty for default. Only relevant for Azure, local and custom
+              (other) providers.
+            </div>
+          </div>
+          <div class="field-control">
+            <input type="text" x-model="$store.settings.settings.embed_model_api_base" />
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Requests per minute limit</div>
+            <div class="field-description">
+              Limits the number of requests per minute to the embedding model. Waits if the limit is exceeded. Set to 0
+              to disable rate limiting.
+            </div>
+          </div>
+          <div class="field-control">
+            <input type="number" x-model.number="$store.settings.settings.embed_model_rl_requests" />
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Input tokens per minute limit</div>
+            <div class="field-description">
+              Limits the number of input tokens per minute to the embedding model. Waits if the limit is exceeded. Set
+              to 0 to disable rate limiting.
+            </div>
+          </div>
+          <div class="field-control">
+            <input type="number" x-model.number="$store.settings.settings.embed_model_rl_input" />
+          </div>
+        </div>
+
+        <div class="field field-full">
+          <div class="field-label">
+            <div class="field-title">Embedding model additional parameters</div>
+            <div class="field-description">
+              Any other parameters supported by <a href='https://docs.litellm.ai/docs/set_keys'
+                target='_blank'>LiteLLM</a>. Format is KEY=VALUE on individual lines, like .env file. Value can also
+              contain JSON objects - when unquoted, it is treated as object, number etc., when quoted, it is treated as
+              string.
+            </div>
+          </div>
+          <div class="field-control">
+            <textarea x-model="$store.settings.settings.embed_model_kwargs"></textarea>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+</body>
+
 </html>

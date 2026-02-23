@@ -1,0 +1,73 @@
+<html>
+
+<head>
+    <title>ElevenLabs TTS</title>
+</head>
+
+<body>
+    <div x-data>
+        <template x-if="$store.settings">
+            <div>
+                <div class="section-title">ElevenLabs TTS</div>
+                <div class="section-description">
+                    Ultra-realistic text-to-speech using ElevenLabs. Requires an ElevenLabs API key.
+                    Can be used as an alternative to the built-in Kokoro TTS.
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">TTS Provider</div>
+                        <div class="field-description">Choose which text-to-speech engine to use.</div>
+                    </div>
+                    <div class="field-control">
+                        <select class="text-input" x-model="$store.settings.tts_provider">
+                            <option value="kokoro">Kokoro (Local)</option>
+                            <option value="elevenlabs">ElevenLabs (Cloud)</option>
+                            <option value="openai">OpenAI TTS</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">API Key</div>
+                        <div class="field-description">Your ElevenLabs API key.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="password" class="text-input" x-model="$store.settings.elevenlabs_api_key"
+                            placeholder="Enter ElevenLabs API key" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Voice ID</div>
+                        <div class="field-description">ElevenLabs voice ID to use. Find voice IDs in your ElevenLabs
+                            dashboard.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="text" class="text-input" x-model="$store.settings.elevenlabs_voice_id"
+                            placeholder="e.g. 21m00Tcm4TlvDq8ikWAM" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Model ID</div>
+                        <div class="field-description">ElevenLabs model to use for synthesis.</div>
+                    </div>
+                    <div class="field-control">
+                        <select class="text-input" x-model="$store.settings.elevenlabs_model_id">
+                            <option value="eleven_multilingual_v2">Multilingual v2</option>
+                            <option value="eleven_turbo_v2_5">Turbo v2.5</option>
+                            <option value="eleven_turbo_v2">Turbo v2</option>
+                            <option value="eleven_monolingual_v1">Monolingual v1</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+</body>
+
+</html>

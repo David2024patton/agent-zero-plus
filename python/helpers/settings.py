@@ -90,6 +90,17 @@ class Settings(TypedDict):
     browser_model_rl_output: int
     browser_model_kwargs: dict[str, Any]
     browser_http_headers: dict[str, Any]
+    browser_max_steps: int
+    browser_backend: str
+
+    subagent_model_provider: str
+    subagent_model_name: str
+    subagent_model_api_base: str
+    subagent_model_kwargs: dict[str, Any]
+    subagent_model_ctx_length: int
+    subagent_model_rl_requests: int
+    subagent_model_rl_input: int
+    subagent_model_rl_output: int
 
     agent_profile: str
     agent_memory_subdir: str
@@ -150,6 +161,133 @@ class Settings(TypedDict):
 
     a2a_server_enabled: bool
 
+    # Swarm orchestration
+    swarm_enabled: bool
+    swarm_default_type: str
+    swarm_default_model: str
+    swarm_max_agents: int
+    swarm_max_loops: int
+    swarm_timeout: int
+    swarm_track_tokens: bool
+    swarm_agent_manifests: str
+    swarm_dynamic_reassignment: bool
+    swarm_output_format: str
+    swarm_tier_premium_enabled: bool
+    swarm_tier_premium_provider: str
+    swarm_tier_premium_name: str
+    swarm_tier_premium_api_base: str
+    swarm_tier_mid_enabled: bool
+    swarm_tier_mid_provider: str
+    swarm_tier_mid_name: str
+    swarm_tier_mid_api_base: str
+    swarm_tier_low_enabled: bool
+    swarm_tier_low_provider: str
+    swarm_tier_low_name: str
+    swarm_tier_low_api_base: str
+
+    # Plugin system
+    plugins_enabled: bool
+    plugin_discord_enabled: bool
+    plugin_discord_bot_token: str
+    plugin_discord_owner_id: str
+    plugin_discord_command_prefix: str
+    plugin_discord_respond_dms: bool
+    plugin_discord_respond_mentions: bool
+
+    # Telegram plugin
+    plugin_telegram_enabled: bool
+    plugin_telegram_bot_token: str
+    plugin_telegram_allowed_users: str
+    plugin_telegram_respond_groups: bool
+    plugin_telegram_respond_private: bool
+
+    # Slack plugin
+    plugin_slack_enabled: bool
+    plugin_slack_bot_token: str
+    plugin_slack_app_token: str
+    plugin_slack_signing_secret: str
+    plugin_slack_allowed_channels: str
+    plugin_slack_respond_dms: bool
+    plugin_slack_respond_mentions: bool
+
+    # Teams plugin
+    plugin_teams_enabled: bool
+    plugin_teams_app_id: str
+    plugin_teams_app_password: str
+
+    # WhatsApp plugin
+    plugin_whatsapp_enabled: bool
+    plugin_whatsapp_session_name: str
+    plugin_whatsapp_allowed_numbers: str
+
+    # Webhook plugin
+    plugin_webhook_enabled: bool
+    plugin_webhook_path: str
+    plugin_webhook_auth_token: str
+
+    # Email plugin
+    plugin_email_enabled: bool
+    plugin_email_imap_host: str
+    plugin_email_imap_port: int
+    plugin_email_imap_user: str
+    plugin_email_imap_password: str
+    plugin_email_smtp_host: str
+    plugin_email_smtp_port: int
+    plugin_email_smtp_user: str
+    plugin_email_smtp_password: str
+    plugin_email_use_tls: bool
+    plugin_email_poll_interval: int
+    plugin_email_allowed_senders: str
+
+    # ElevenLabs TTS
+    elevenlabs_api_key: str
+    elevenlabs_voice_id: str
+    elevenlabs_model_id: str
+    tts_provider: str
+
+    # Model failover
+    model_failover_enabled: bool
+    model_failover_providers: str
+
+    # Air-gapped mode
+    air_gapped_mode: bool
+
+    # --- OpenClaw Feature Adoption ---
+    # Lifecycle reactions
+    lifecycle_reactions_enabled: bool
+    lifecycle_reactions_emoji_set: str  # "default" | "minimal" | "custom"
+
+    # Nested sub-agents
+    subagent_enabled: bool
+    subagent_max_depth: int
+    subagent_max_children: int
+
+    # DM access control
+    dm_policy_mode: str  # "all" | "allowlist" | "owner_only" | "none"
+    dm_policy_allowlist: str  # comma-separated user IDs
+
+    # Per-channel model overrides
+    model_override_discord: str
+    model_override_telegram: str
+    model_override_slack: str
+
+    # Sandbox browser isolation
+    sandbox_browser_binds: str
+    sandbox_browser_read_only: bool
+    sandbox_browser_network: str  # "bridge" | "host" | "none"
+
+    # Cron webhook delivery
+    cron_webhook_enabled: bool
+    cron_webhook_default_url: str
+    cron_webhook_auth_token: str
+
+    # WebMCP (Web Model Context Protocol) support
+    webmcp_enabled: bool
+
+    # Cloudflare Workers AI credentials
+    cloudflare_account_id: str
+    cloudflare_api_token: str
+
     variables: str
     secrets: str
 
@@ -157,6 +295,9 @@ class Settings(TypedDict):
     litellm_global_kwargs: dict[str, Any]
 
     update_check_enabled: bool
+
+    # Skills auto-load
+    auto_load_skills: str
 
 
 class PartialSettings(Settings, total=False):
@@ -283,6 +424,10 @@ def convert_out(settings: Settings) -> SettingsOutput:
     additional["chat_providers"] = _ensure_option_present(additional.get("chat_providers"), current.get("chat_model_provider"))
     additional["chat_providers"] = _ensure_option_present(additional.get("chat_providers"), current.get("util_model_provider"))
     additional["chat_providers"] = _ensure_option_present(additional.get("chat_providers"), current.get("browser_model_provider"))
+    additional["chat_providers"] = _ensure_option_present(additional.get("chat_providers"), current.get("subagent_model_provider"))
+    additional["chat_providers"] = _ensure_option_present(additional.get("chat_providers"), current.get("swarm_tier_premium_provider"))
+    additional["chat_providers"] = _ensure_option_present(additional.get("chat_providers"), current.get("swarm_tier_mid_provider"))
+    additional["chat_providers"] = _ensure_option_present(additional.get("chat_providers"), current.get("swarm_tier_low_provider"))
     additional["embedding_providers"] = _ensure_option_present(additional.get("embedding_providers"), current.get("embed_model_provider"))
     additional["shell_interfaces"] = _ensure_option_present(additional.get("shell_interfaces"), current.get("shell_interface"))
     additional["agent_subdirs"] = _ensure_option_present(additional.get("agent_subdirs"), current.get("agent_profile"))
@@ -307,6 +452,46 @@ def convert_out(settings: Settings) -> SettingsOutput:
     out["settings"]["root_password"] = (
         PASSWORD_PLACEHOLDER if dotenv.get_dotenv_value(dotenv.KEY_ROOT_PASSWORD) else ""
     )
+
+    # mask plugin discord bot token
+    discord_token = dotenv.get_dotenv_value("DISCORD_BOT_TOKEN") or current.get("plugin_discord_bot_token", "")
+    out["settings"]["plugin_discord_bot_token"] = PASSWORD_PLACEHOLDER if discord_token else ""
+
+    # mask telegram bot token
+    tg_token = dotenv.get_dotenv_value("TELEGRAM_BOT_TOKEN") or current.get("plugin_telegram_bot_token", "")
+    out["settings"]["plugin_telegram_bot_token"] = PASSWORD_PLACEHOLDER if tg_token else ""
+
+    # mask slack tokens
+    slack_bot = dotenv.get_dotenv_value("SLACK_BOT_TOKEN") or current.get("plugin_slack_bot_token", "")
+    out["settings"]["plugin_slack_bot_token"] = PASSWORD_PLACEHOLDER if slack_bot else ""
+    slack_app = dotenv.get_dotenv_value("SLACK_APP_TOKEN") or current.get("plugin_slack_app_token", "")
+    out["settings"]["plugin_slack_app_token"] = PASSWORD_PLACEHOLDER if slack_app else ""
+    slack_secret = dotenv.get_dotenv_value("SLACK_SIGNING_SECRET") or current.get("plugin_slack_signing_secret", "")
+    out["settings"]["plugin_slack_signing_secret"] = PASSWORD_PLACEHOLDER if slack_secret else ""
+
+    # mask teams credentials
+    teams_pwd = dotenv.get_dotenv_value("TEAMS_APP_PASSWORD") or current.get("plugin_teams_app_password", "")
+    out["settings"]["plugin_teams_app_password"] = PASSWORD_PLACEHOLDER if teams_pwd else ""
+
+    # mask webhook auth token
+    wh_token = dotenv.get_dotenv_value("WEBHOOK_AUTH_TOKEN") or current.get("plugin_webhook_auth_token", "")
+    out["settings"]["plugin_webhook_auth_token"] = PASSWORD_PLACEHOLDER if wh_token else ""
+
+    # mask email passwords
+    email_imap_pw = dotenv.get_dotenv_value("EMAIL_IMAP_PASSWORD") or current.get("plugin_email_imap_password", "")
+    out["settings"]["plugin_email_imap_password"] = PASSWORD_PLACEHOLDER if email_imap_pw else ""
+    email_smtp_pw = dotenv.get_dotenv_value("EMAIL_SMTP_PASSWORD") or current.get("plugin_email_smtp_password", "")
+    out["settings"]["plugin_email_smtp_password"] = PASSWORD_PLACEHOLDER if email_smtp_pw else ""
+
+    # mask elevenlabs api key
+    el_key = dotenv.get_dotenv_value("ELEVENLABS_API_KEY") or current.get("elevenlabs_api_key", "")
+    out["settings"]["elevenlabs_api_key"] = PASSWORD_PLACEHOLDER if el_key else ""
+
+    # mask cloudflare credentials
+    cf_account = dotenv.get_dotenv_value("CLOUDFLARE_ACCOUNT_ID") or current.get("cloudflare_account_id", "")
+    out["settings"]["cloudflare_account_id"] = PASSWORD_PLACEHOLDER if cf_account else ""
+    cf_token = dotenv.get_dotenv_value("CLOUDFLARE_API_TOKEN") or current.get("cloudflare_api_token", "")
+    out["settings"]["cloudflare_api_token"] = PASSWORD_PLACEHOLDER if cf_token else ""
 
     #secrets
     secrets_manager = get_default_secrets_manager()
@@ -452,6 +637,21 @@ def _load_sensitive_settings(settings: Settings):
     settings["rfc_password"] = dotenv.get_dotenv_value(dotenv.KEY_RFC_PASSWORD) or ""
     settings["root_password"] = dotenv.get_dotenv_value(dotenv.KEY_ROOT_PASSWORD) or ""
 
+    # load plugin tokens from .env
+    settings["plugin_telegram_bot_token"] = dotenv.get_dotenv_value("TELEGRAM_BOT_TOKEN") or ""
+    settings["plugin_slack_bot_token"] = dotenv.get_dotenv_value("SLACK_BOT_TOKEN") or ""
+    settings["plugin_slack_app_token"] = dotenv.get_dotenv_value("SLACK_APP_TOKEN") or ""
+    settings["plugin_slack_signing_secret"] = dotenv.get_dotenv_value("SLACK_SIGNING_SECRET") or ""
+    settings["plugin_teams_app_password"] = dotenv.get_dotenv_value("TEAMS_APP_PASSWORD") or ""
+    settings["plugin_webhook_auth_token"] = dotenv.get_dotenv_value("WEBHOOK_AUTH_TOKEN") or ""
+    settings["plugin_email_imap_password"] = dotenv.get_dotenv_value("EMAIL_IMAP_PASSWORD") or ""
+    settings["plugin_email_smtp_password"] = dotenv.get_dotenv_value("EMAIL_SMTP_PASSWORD") or ""
+    settings["elevenlabs_api_key"] = dotenv.get_dotenv_value("ELEVENLABS_API_KEY") or ""
+
+    # load cloudflare credentials from .env
+    settings["cloudflare_account_id"] = dotenv.get_dotenv_value("CLOUDFLARE_ACCOUNT_ID") or ""
+    settings["cloudflare_api_token"] = dotenv.get_dotenv_value("CLOUDFLARE_API_TOKEN") or ""
+
     # load secrets raw content
     secrets_manager = get_default_secrets_manager()
     try:
@@ -485,6 +685,18 @@ def _remove_sensitive_settings(settings: Settings):
     settings["root_password"] = ""
     settings["mcp_server_token"] = ""
     settings["secrets"] = ""
+    settings["plugin_discord_bot_token"] = ""
+    settings["plugin_telegram_bot_token"] = ""
+    settings["plugin_slack_bot_token"] = ""
+    settings["plugin_slack_app_token"] = ""
+    settings["plugin_slack_signing_secret"] = ""
+    settings["plugin_teams_app_password"] = ""
+    settings["plugin_webhook_auth_token"] = ""
+    settings["plugin_email_imap_password"] = ""
+    settings["plugin_email_smtp_password"] = ""
+    settings["elevenlabs_api_key"] = ""
+    settings["cloudflare_account_id"] = ""
+    settings["cloudflare_api_token"] = ""
 
 
 def _write_sensitive_settings(settings: Settings):
@@ -506,6 +718,46 @@ def _write_sensitive_settings(settings: Settings):
     secrets_manager = get_default_secrets_manager()
     submitted_content = settings["secrets"]
     secrets_manager.save_secrets_with_merge(submitted_content)
+
+    # Discord bot token
+    if settings.get("plugin_discord_bot_token") and settings["plugin_discord_bot_token"] != PASSWORD_PLACEHOLDER:
+        dotenv.save_dotenv_value("DISCORD_BOT_TOKEN", settings["plugin_discord_bot_token"])
+
+    # Telegram bot token
+    if settings.get("plugin_telegram_bot_token") and settings["plugin_telegram_bot_token"] != PASSWORD_PLACEHOLDER:
+        dotenv.save_dotenv_value("TELEGRAM_BOT_TOKEN", settings["plugin_telegram_bot_token"])
+
+    # Slack tokens
+    if settings.get("plugin_slack_bot_token") and settings["plugin_slack_bot_token"] != PASSWORD_PLACEHOLDER:
+        dotenv.save_dotenv_value("SLACK_BOT_TOKEN", settings["plugin_slack_bot_token"])
+    if settings.get("plugin_slack_app_token") and settings["plugin_slack_app_token"] != PASSWORD_PLACEHOLDER:
+        dotenv.save_dotenv_value("SLACK_APP_TOKEN", settings["plugin_slack_app_token"])
+    if settings.get("plugin_slack_signing_secret") and settings["plugin_slack_signing_secret"] != PASSWORD_PLACEHOLDER:
+        dotenv.save_dotenv_value("SLACK_SIGNING_SECRET", settings["plugin_slack_signing_secret"])
+
+    # Teams credentials
+    if settings.get("plugin_teams_app_password") and settings["plugin_teams_app_password"] != PASSWORD_PLACEHOLDER:
+        dotenv.save_dotenv_value("TEAMS_APP_PASSWORD", settings["plugin_teams_app_password"])
+
+    # Webhook auth token
+    if settings.get("plugin_webhook_auth_token") and settings["plugin_webhook_auth_token"] != PASSWORD_PLACEHOLDER:
+        dotenv.save_dotenv_value("WEBHOOK_AUTH_TOKEN", settings["plugin_webhook_auth_token"])
+
+    # Email passwords
+    if settings.get("plugin_email_imap_password") and settings["plugin_email_imap_password"] != PASSWORD_PLACEHOLDER:
+        dotenv.save_dotenv_value("EMAIL_IMAP_PASSWORD", settings["plugin_email_imap_password"])
+    if settings.get("plugin_email_smtp_password") and settings["plugin_email_smtp_password"] != PASSWORD_PLACEHOLDER:
+        dotenv.save_dotenv_value("EMAIL_SMTP_PASSWORD", settings["plugin_email_smtp_password"])
+
+    # ElevenLabs API key
+    if settings.get("elevenlabs_api_key") and settings["elevenlabs_api_key"] != PASSWORD_PLACEHOLDER:
+        dotenv.save_dotenv_value("ELEVENLABS_API_KEY", settings["elevenlabs_api_key"])
+
+    # Cloudflare credentials
+    if settings.get("cloudflare_account_id") and settings["cloudflare_account_id"] != PASSWORD_PLACEHOLDER:
+        dotenv.save_dotenv_value("CLOUDFLARE_ACCOUNT_ID", settings["cloudflare_account_id"])
+    if settings.get("cloudflare_api_token") and settings["cloudflare_api_token"] != PASSWORD_PLACEHOLDER:
+        dotenv.save_dotenv_value("CLOUDFLARE_API_TOKEN", settings["cloudflare_api_token"])
 
 
 
@@ -547,6 +799,16 @@ def get_default_settings() -> Settings:
         browser_model_rl_output=get_default_value("browser_model_rl_output", 0),
         browser_model_kwargs=get_default_value("browser_model_kwargs", {}),
         browser_http_headers=get_default_value("browser_http_headers", {}),
+        browser_max_steps=get_default_value("browser_max_steps", 25),
+        browser_backend=get_default_value("browser_backend", "browser_use"),
+        subagent_model_provider=get_default_value("subagent_model_provider", ""),
+        subagent_model_name=get_default_value("subagent_model_name", ""),
+        subagent_model_api_base=get_default_value("subagent_model_api_base", ""),
+        subagent_model_kwargs=get_default_value("subagent_model_kwargs", {}),
+        subagent_model_ctx_length=get_default_value("subagent_model_ctx_length", 0),
+        subagent_model_rl_requests=get_default_value("subagent_model_rl_requests", 0),
+        subagent_model_rl_input=get_default_value("subagent_model_rl_input", 0),
+        subagent_model_rl_output=get_default_value("subagent_model_rl_output", 0),
         memory_recall_enabled=get_default_value("memory_recall_enabled", True),
         memory_recall_delayed=get_default_value("memory_recall_delayed", False),
         memory_recall_interval=get_default_value("memory_recall_interval", 3),
@@ -595,10 +857,110 @@ def get_default_settings() -> Settings:
         mcp_server_enabled=get_default_value("mcp_server_enabled", False),
         mcp_server_token=create_auth_token(),
         a2a_server_enabled=get_default_value("a2a_server_enabled", False),
+        swarm_enabled=get_default_value("swarm_enabled", True),
+        swarm_default_type=get_default_value("swarm_default_type", "sequential"),
+        swarm_default_model=get_default_value("swarm_default_model", ""),
+        swarm_max_agents=get_default_value("swarm_max_agents", 10),
+        swarm_max_loops=get_default_value("swarm_max_loops", 3),
+        swarm_timeout=get_default_value("swarm_timeout", 300),
+        swarm_track_tokens=get_default_value("swarm_track_tokens", True),
+        swarm_agent_manifests=get_default_value("swarm_agent_manifests", "[]"),
+        swarm_dynamic_reassignment=get_default_value("swarm_dynamic_reassignment", False),
+        swarm_output_format=get_default_value("swarm_output_format", "markdown"),
+        swarm_tier_premium_enabled=get_default_value("swarm_tier_premium_enabled", True),
+        swarm_tier_premium_provider=get_default_value("swarm_tier_premium_provider", "openrouter"),
+        swarm_tier_premium_name=get_default_value("swarm_tier_premium_name", "anthropic/claude-sonnet-4-20250514"),
+        swarm_tier_premium_api_base=get_default_value("swarm_tier_premium_api_base", ""),
+        swarm_tier_mid_enabled=get_default_value("swarm_tier_mid_enabled", True),
+        swarm_tier_mid_provider=get_default_value("swarm_tier_mid_provider", "openrouter"),
+        swarm_tier_mid_name=get_default_value("swarm_tier_mid_name", "openai/gpt-4o-mini"),
+        swarm_tier_mid_api_base=get_default_value("swarm_tier_mid_api_base", ""),
+        swarm_tier_low_enabled=get_default_value("swarm_tier_low_enabled", True),
+        swarm_tier_low_provider=get_default_value("swarm_tier_low_provider", "openrouter"),
+        swarm_tier_low_name=get_default_value("swarm_tier_low_name", "openai/gpt-3.5-turbo"),
+        swarm_tier_low_api_base=get_default_value("swarm_tier_low_api_base", ""),
+        plugins_enabled=get_default_value("plugins_enabled", True),
+        plugin_discord_enabled=get_default_value("plugin_discord_enabled", False),
+        plugin_discord_bot_token="",
+        plugin_discord_owner_id=get_default_value("plugin_discord_owner_id", ""),
+        plugin_discord_command_prefix=get_default_value("plugin_discord_command_prefix", "!a0"),
+        plugin_discord_respond_dms=get_default_value("plugin_discord_respond_dms", True),
+        plugin_discord_respond_mentions=get_default_value("plugin_discord_respond_mentions", True),
+        # Telegram
+        plugin_telegram_enabled=get_default_value("plugin_telegram_enabled", False),
+        plugin_telegram_bot_token="",
+        plugin_telegram_allowed_users=get_default_value("plugin_telegram_allowed_users", ""),
+        plugin_telegram_respond_groups=get_default_value("plugin_telegram_respond_groups", True),
+        plugin_telegram_respond_private=get_default_value("plugin_telegram_respond_private", True),
+        # Slack
+        plugin_slack_enabled=get_default_value("plugin_slack_enabled", False),
+        plugin_slack_bot_token="",
+        plugin_slack_app_token="",
+        plugin_slack_signing_secret="",
+        plugin_slack_allowed_channels=get_default_value("plugin_slack_allowed_channels", ""),
+        plugin_slack_respond_dms=get_default_value("plugin_slack_respond_dms", True),
+        plugin_slack_respond_mentions=get_default_value("plugin_slack_respond_mentions", True),
+        # Teams
+        plugin_teams_enabled=get_default_value("plugin_teams_enabled", False),
+        plugin_teams_app_id=get_default_value("plugin_teams_app_id", ""),
+        plugin_teams_app_password="",
+        # WhatsApp
+        plugin_whatsapp_enabled=get_default_value("plugin_whatsapp_enabled", False),
+        plugin_whatsapp_session_name=get_default_value("plugin_whatsapp_session_name", "default"),
+        plugin_whatsapp_allowed_numbers=get_default_value("plugin_whatsapp_allowed_numbers", ""),
+        # Webhook
+        plugin_webhook_enabled=get_default_value("plugin_webhook_enabled", False),
+        plugin_webhook_path=get_default_value("plugin_webhook_path", "/webhook/agent"),
+        plugin_webhook_auth_token="",
+        # Email
+        plugin_email_enabled=get_default_value("plugin_email_enabled", False),
+        plugin_email_imap_host=get_default_value("plugin_email_imap_host", ""),
+        plugin_email_imap_port=get_default_value("plugin_email_imap_port", 993),
+        plugin_email_imap_user=get_default_value("plugin_email_imap_user", ""),
+        plugin_email_imap_password="",
+        plugin_email_smtp_host=get_default_value("plugin_email_smtp_host", ""),
+        plugin_email_smtp_port=get_default_value("plugin_email_smtp_port", 587),
+        plugin_email_smtp_user=get_default_value("plugin_email_smtp_user", ""),
+        plugin_email_smtp_password="",
+        plugin_email_use_tls=get_default_value("plugin_email_use_tls", True),
+        plugin_email_poll_interval=get_default_value("plugin_email_poll_interval", 30),
+        plugin_email_allowed_senders=get_default_value("plugin_email_allowed_senders", ""),
+        # ElevenLabs TTS
+        elevenlabs_api_key="",
+        elevenlabs_voice_id=get_default_value("elevenlabs_voice_id", ""),
+        elevenlabs_model_id=get_default_value("elevenlabs_model_id", "eleven_multilingual_v2"),
+        tts_provider=get_default_value("tts_provider", "kokoro"),
+        # Model failover
+        model_failover_enabled=get_default_value("model_failover_enabled", False),
+        model_failover_providers=get_default_value("model_failover_providers", ""),
+        # Air-gapped mode
+        air_gapped_mode=get_default_value("air_gapped_mode", False),
+        # --- OpenClaw Feature Adoption ---
+        lifecycle_reactions_enabled=get_default_value("lifecycle_reactions_enabled", True),
+        lifecycle_reactions_emoji_set=get_default_value("lifecycle_reactions_emoji_set", "default"),
+        subagent_enabled=get_default_value("subagent_enabled", True),
+        subagent_max_depth=get_default_value("subagent_max_depth", 2),
+        subagent_max_children=get_default_value("subagent_max_children", 5),
+        dm_policy_mode=get_default_value("dm_policy_mode", "all"),
+        dm_policy_allowlist=get_default_value("dm_policy_allowlist", ""),
+        model_override_discord=get_default_value("model_override_discord", ""),
+        model_override_telegram=get_default_value("model_override_telegram", ""),
+        model_override_slack=get_default_value("model_override_slack", ""),
+        sandbox_browser_binds=get_default_value("sandbox_browser_binds", "/tmp/browser:/tmp/browser"),
+        sandbox_browser_read_only=get_default_value("sandbox_browser_read_only", True),
+        sandbox_browser_network=get_default_value("sandbox_browser_network", "bridge"),
+        cron_webhook_enabled=get_default_value("cron_webhook_enabled", False),
+        cron_webhook_default_url=get_default_value("cron_webhook_default_url", ""),
+        cron_webhook_auth_token="",
+        webmcp_enabled=get_default_value("webmcp_enabled", True),
+        # Cloudflare
+        cloudflare_account_id="",
+        cloudflare_api_token="",
         variables="",
         secrets="",
         litellm_global_kwargs=get_default_value("litellm_global_kwargs", {}),
         update_check_enabled=get_default_value("update_check_enabled", True),
+        auto_load_skills=get_default_value("auto_load_skills", ""),
     )
 
 

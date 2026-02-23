@@ -1,0 +1,35 @@
+<html>
+
+<head>
+    <title>Swarm Settings</title>
+</head>
+
+<body>
+    <div x-data>
+        <template x-if="$store.settings.settings">
+            <div>
+                <!-- General -->
+                <div x-show="$store.settings.activeSubTab === 'swarm-general'">
+                    <x-component path="settings/swarm/swarm-general.html"></x-component>
+                </div>
+
+                <!-- Limits & Safety -->
+                <div x-show="$store.settings.activeSubTab === 'swarm-limits'">
+                    <x-component path="settings/swarm/swarm-limits.html"></x-component>
+                </div>
+
+                <!-- Model Tiers -->
+                <div x-show="$store.settings.activeSubTab === 'swarm-tiers'">
+                    <x-component path="settings/swarm/swarm-tiers.html"></x-component>
+                </div>
+
+                <!-- Agent Manifests -->
+                <div x-show="$store.settings.activeSubTab === 'swarm-manifests'">
+                    <x-component path="settings/swarm/swarm-manifests.html"></x-component>
+                </div>
+            </div>
+        </template>
+    </div>
+</body>
+
+</html>

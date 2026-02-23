@@ -71,17 +71,34 @@ def initialize_agent(override_settings: dict | None = None):
         vision=current_settings["browser_model_vision"],
         kwargs=_normalize_model_kwargs(current_settings["browser_model_kwargs"]),
     )
+    # subagent model from user settings (optional - falls back to chat model if empty)
+    subagent_llm = None
+    if current_settings.get("subagent_model_name", "").strip():
+        subagent_llm = models.ModelConfig(
+            type=models.ModelType.CHAT,
+            provider=current_settings["subagent_model_provider"],
+            name=current_settings["subagent_model_name"],
+            api_base=current_settings["subagent_model_api_base"],
+            ctx_length=current_settings.get("subagent_model_ctx_length", 0) or current_settings["chat_model_ctx_length"],
+            limit_requests=current_settings.get("subagent_model_rl_requests", 0),
+            limit_input=current_settings.get("subagent_model_rl_input", 0),
+            limit_output=current_settings.get("subagent_model_rl_output", 0),
+            kwargs=_normalize_model_kwargs(current_settings.get("subagent_model_kwargs", {})),
+        )
     # agent configuration
     config = AgentConfig(
         chat_model=chat_llm,
         utility_model=utility_llm,
         embeddings_model=embedding_llm,
         browser_model=browser_llm,
+        subagent_model=subagent_llm,
         profile=current_settings["agent_profile"],
         memory_subdir=current_settings["agent_memory_subdir"],
         knowledge_subdirs=[current_settings["agent_knowledge_subdir"], "default"],
         mcp_servers=current_settings["mcp_servers"],
         browser_http_headers=current_settings["browser_http_headers"],
+        browser_max_steps=current_settings["browser_max_steps"],
+        browser_backend=current_settings["browser_backend"],
         # code_exec params get initialized in _set_runtime_config
         # additional = {},
     )
@@ -139,6 +156,63 @@ def initialize_job_loop():
 def initialize_preload():
     import preload
     return defer.DeferredTask().start_task(preload.preload)
+
+def initialize_plugins():
+    """Bootstrap the plugin system: discover enabled plugins and start channel adapters."""
+    from python.helpers.plugin_loader import get_plugin_loader
+    from python.helpers.plugin_api import ChannelMessage
+
+    async def _start_plugins():
+        loader = get_plugin_loader()
+        discovered = loader.discover()
+        if not discovered:
+            PrintStyle().print("No enabled plugins found.")
+            return
+
+        PrintStyle().print(f"Discovered plugins: {discovered}")
+
+        async def _handle_incoming_message(message: ChannelMessage):
+            """Route incoming channel messages to Agent Zero's chat pipeline."""
+            try:
+                from agent import AgentContext, AgentConfig, UserMessage
+                import initialize as init_module
+
+                # Find or create a context for this channel+sender
+                context_id = f"{message.channel_id}_{message.sender_id}"
+                context = AgentContext.get(context_id)
+                if context is None:
+                    config = init_module.initialize_agent()
+                    context = AgentContext(
+                        config=config,
+                        id=context_id,
+                        name=f"{message.channel_id}: {message.sender_name}",
+                    )
+
+                # Send the user message through the agent
+                user_msg = UserMessage(message=message.content)
+                task = context.communicate(user_msg)
+
+                # Wait for the agent to finish processing
+                if task:
+                    response = await task.result()
+
+                    # Send the reply back via the channel
+                    if response:
+                        await loader.send(
+                            message.channel_id,
+                            to=message.sender_id,
+                            content=str(response),
+                        )
+            except Exception as e:
+                import traceback
+                PrintStyle(font_color="red").print(
+                    f"Error handling {message.channel_id} message: {e}\n{traceback.format_exc()}"
+                )
+
+        await loader.start_all(message_handler=_handle_incoming_message)
+        PrintStyle().print(f"Plugin channels started: {loader.list_channels()}")
+
+    return defer.DeferredTask("PluginLoader").start_task(_start_plugins)
 
 def initialize_migration():
     from python.helpers import migration, dotenv

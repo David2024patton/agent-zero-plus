@@ -1,0 +1,152 @@
+<html>
+
+<head>
+    <title>Import Plugins</title>
+    <script type="module">
+        import { store } from "/components/settings/plugins/plugins-import-store.js";
+    </script>
+</head>
+
+<body>
+    <div x-data>
+        <template x-if="$store.pluginsImportStore">
+            <div x-init="$store.pluginsImportStore.init()" x-destroy="$store.pluginsImportStore.onClose()">
+
+                <h3>Import Plugins (plugin.json)</h3>
+
+                <div class="upload-section">
+                    <label for="plugins-file" class="upload-label">
+                        Select Plugin Pack (.zip)
+                    </label>
+                    <input type="file" id="plugins-file" accept=".zip"
+                        @change="$store.pluginsImportStore.handleFileUpload($event)">
+                    <div class="upload-hint">
+                        Upload an archive containing plugin folders with plugin.json manifests.
+                    </div>
+                </div>
+
+                <div x-show="$store.pluginsImportStore.loading" class="loading">
+                    <span x-text="$store.pluginsImportStore.loadingMessage || 'Processing...'"></span>
+                </div>
+
+                <div x-show="$store.pluginsImportStore.error" class="error">
+                    <span x-text="$store.pluginsImportStore.error"></span>
+                </div>
+
+                <div x-show="$store.pluginsImportStore.preview" class="preview">
+                    <h4>Preview</h4>
+                    <div class="preview-meta">
+                        <div>Plugins found: <span x-text="$store.pluginsImportStore.preview?.plugin_count || 0"></span>
+                        </div>
+                    </div>
+
+                    <textarea class="preview-list" readonly
+                        x-text="($store.pluginsImportStore.preview?.plugins || []).join('\n')"></textarea>
+
+                    <div class="buttons">
+                        <button class="btn slim primary" @click="$store.pluginsImportStore.performImport()"
+                            :disabled="$store.pluginsImportStore.loading || ($store.pluginsImportStore.preview?.plugin_count || 0) === 0">
+                            Import
+                        </button>
+                    </div>
+                </div>
+
+                <div x-show="$store.pluginsImportStore.result" class="result">
+                    <h4>Import Complete</h4>
+                    <div class="preview-meta">
+                        <div>Imported: <span x-text="$store.pluginsImportStore.result?.imported_count || 0"></span>
+                        </div>
+                        <div>Skipped: <span x-text="$store.pluginsImportStore.result?.skipped_count || 0"></span></div>
+                    </div>
+                    <div class="note">
+                        Plugins are available immediately. Use the Refresh button in List Plugins to see them.
+                    </div>
+                </div>
+
+            </div>
+        </template>
+    </div>
+
+    <style>
+        .upload-section {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border: 2px dashed var(--color-border);
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .upload-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .upload-hint {
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--color-secondary);
+        }
+
+        .buttons {
+            margin-top: 0.75rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .loading {
+            width: 100%;
+            text-align: center;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            color: var(--color-secondary);
+        }
+
+        .error {
+            color: var(--color-error);
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            background: var(--color-error-bg);
+            border-radius: 4px;
+        }
+
+        .preview,
+        .result {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: var(--color-bg-primary);
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+        }
+
+        .preview-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.25rem 1rem;
+            margin-bottom: 0.5rem;
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .preview-list {
+            width: 100%;
+            height: 10em;
+            font-family: monospace;
+            font-size: 0.85em;
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            padding: 0.5em;
+            resize: vertical;
+        }
+
+        .note {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+        }
+    </style>
+</body>
+
+</html>

@@ -1,34 +1,49 @@
 <html>
-  <head>
-    <title>API Keys</title>
-  </head>
 
-  <body>
-    <div x-data>
-      <template x-if="$store.settings.settings">
-        <div>
-          <div class="section-title">API Keys</div>
-          <div class="section-description">
-            API keys for model providers and services used by Agent Zero. You can set multiple API keys separated by a comma (,). They will be used in round-robin fashion.<br>
-            For more information about Agent Zero Venice provider, see <a href="http://agent-zero.ai/?community/api-dashboard/about" target="_blank">Agent Zero Venice</a>.
-          </div>
+<head>
+  <title>API Keys</title>
+</head>
 
-          <template x-for="provider in $store.settings.apiKeyProviders" :key="provider.value">
-            <div class="field">
-              <div class="field-label">
-                <div class="field-title" x-text="provider.label"></div>
-              </div>
-              <div class="field-control">
-                <input
-                  type="text"
-                  x-model="$store.settings.settings.api_keys[provider.value]"
-                  autocomplete="off"
-                />
-              </div>
-            </div>
-          </template>
+<body>
+  <div x-data="{ collapsed: {} }">
+    <template x-if="$store.settings.settings">
+      <div>
+        <div class="section-title">API Keys</div>
+        <div class="section-description">
+          API keys for model providers and services used by Agent Zero. You can set multiple API keys separated by a
+          comma (,). They will be used in round-robin fashion.<br>
+          For more information about Agent Zero Venice provider, see <a
+            href="http://agent-zero.ai/?community/api-dashboard/about" target="_blank">Agent Zero Venice</a>.
         </div>
-      </template>
-    </div>
-  </body>
+
+        <template x-for="(cat, catIdx) in $store.settings.apiKeyCategories" :key="cat.name">
+          <div class="api-key-category">
+            <!-- Category Header (clickable to collapse/expand) -->
+            <div class="api-key-category-header" @click="collapsed[catIdx] = !collapsed[catIdx]">
+              <span class="api-key-category-icon" x-text="cat.icon"></span>
+              <span class="api-key-category-name" x-text="cat.name"></span>
+              <span class="api-key-category-count" x-text="'(' + cat.providers.length + ')'"></span>
+              <span class="api-key-category-chevron" :class="{'expanded': !collapsed[catIdx]}">›</span>
+            </div>
+
+            <!-- Provider fields -->
+            <div x-show="!collapsed[catIdx]" x-transition>
+              <template x-for="provider in cat.providers" :key="provider.value">
+                <div class="field">
+                  <div class="field-label">
+                    <div class="field-title" x-text="provider.label"></div>
+                  </div>
+                  <div class="field-control">
+                    <input type="text" x-model="$store.settings.settings.api_keys[provider.value]" autocomplete="off" />
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+      </div>
+    </template>
+  </div>
+</body>
+
 </html>

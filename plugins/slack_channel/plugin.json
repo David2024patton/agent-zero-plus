@@ -1,0 +1,55 @@
+{
+    "id": "slack_channel",
+    "name": "Slack",
+    "description": "Connect Agent Zero to Slack workspaces. Responds to DMs, @mentions, and slash commands.",
+    "version": "1.0.0",
+    "type": "channel",
+    "entry": "__init__.py",
+    "config": {
+        "bot_token": {
+            "label": "Bot Token",
+            "description": "Slack Bot User OAuth Token (xoxb-...)",
+            "type": "password",
+            "env": "SLACK_BOT_TOKEN",
+            "default": "",
+            "sensitive": true
+        },
+        "app_token": {
+            "label": "App-Level Token",
+            "description": "Slack App-Level Token for Socket Mode (xapp-...)",
+            "type": "password",
+            "env": "SLACK_APP_TOKEN",
+            "default": "",
+            "sensitive": true
+        },
+        "signing_secret": {
+            "label": "Signing Secret",
+            "description": "Slack app signing secret for request verification",
+            "type": "password",
+            "env": "SLACK_SIGNING_SECRET",
+            "default": "",
+            "sensitive": true
+        },
+        "allowed_channels": {
+            "label": "Allowed Channels",
+            "description": "Comma-separated channel IDs the bot can respond in. Leave empty for all.",
+            "type": "text",
+            "default": "",
+            "sensitive": false
+        },
+        "respond_to_dms": {
+            "label": "Respond to DMs",
+            "description": "Allow the bot to respond to direct messages",
+            "type": "switch",
+            "default": true,
+            "sensitive": false
+        },
+        "respond_to_mentions": {
+            "label": "Respond to Mentions",
+            "description": "Allow the bot to respond when @mentioned in channels",
+            "type": "switch",
+            "default": true,
+            "sensitive": false
+        }
+    }
+}

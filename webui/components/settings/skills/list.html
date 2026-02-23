@@ -1,10 +1,12 @@
 <html>
+
 <head>
     <title>List Skills</title>
     <script type="module">
         import { store } from "/components/settings/skills/skills-list-store.js";
     </script>
 </head>
+
 <body>
     <div x-data>
         <template x-if="$store.skillsListStore">
@@ -33,7 +35,8 @@
                             <select x-model="$store.skillsListStore.agentProfileKey"
                                 @change="$store.skillsListStore.loadSkills()">
                                 <option value="">All</option>
-                                <template x-for="agentProfile in $store.skillsListStore.agentProfiles" :key="agentProfile.key">
+                                <template x-for="agentProfile in $store.skillsListStore.agentProfiles"
+                                    :key="agentProfile.key">
                                     <option :value="agentProfile.key" x-text="agentProfile.label"></option>
                                 </template>
                             </select>
@@ -41,8 +44,7 @@
 
                         <div class="skills-toolbar-actions">
                             <button type="button" class="button confirm" title="Refresh"
-                                @click="$store.skillsListStore.loadSkills()"
-                                :disabled="$store.skillsListStore.loading">
+                                @click="$store.skillsListStore.loadSkills()" :disabled="$store.skillsListStore.loading">
                                 <span class="icon material-symbols-outlined">refresh</span> Refresh
                             </button>
                         </div>
@@ -71,6 +73,11 @@
                                     <code class="skill-path" x-text="skill.path"></code>
                                 </div>
                                 <div class="skill-actions">
+                                    <label class="auto-load-label" title="Auto-load this skill every session">
+                                        <input type="checkbox" :checked="$store.skillsListStore.isAutoLoad(skill)"
+                                            @change="$store.skillsListStore.toggleAutoLoad(skill)" />
+                                        <span class="auto-load-text">Auto Load</span>
+                                    </label>
                                     <button type="button" class="button" title="Open in browser"
                                         @click="$store.skillsListStore.openSkill(skill)">
                                         <span class="icon material-symbols-outlined">folder_open</span> Open
@@ -81,7 +88,8 @@
                                     </button>
                                 </div>
                             </div>
-                            <div class="skill-description" x-text="skill.description || 'No description provided.'"></div>
+                            <div class="skill-description" x-text="skill.description || 'No description provided.'">
+                            </div>
                         </div>
                     </template>
                 </div>
@@ -192,9 +200,39 @@
             padding-bottom: var(--spacing-sm);
             flex-wrap: wrap;
             min-width: 0;
-            flex: 0 1 11.5rem;
+            flex: 0 1 auto;
             max-width: 100%;
             justify-content: flex-end;
+        }
+
+        .auto-load-label {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            border: 1px solid var(--color-border);
+            background: var(--color-bg-secondary, transparent);
+            transition: border-color 0.2s, background 0.2s;
+            white-space: nowrap;
+            font-size: var(--font-size-small);
+        }
+
+        .auto-load-label:hover {
+            border-color: var(--color-accent, #3b82f6);
+        }
+
+        .auto-load-label input[type="checkbox"] {
+            accent-color: var(--color-accent, #3b82f6);
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .auto-load-text {
+            color: var(--color-text-secondary);
+            user-select: none;
         }
 
         .skill-description {
@@ -240,4 +278,5 @@
         }
     </style>
 </body>
+
 </html>

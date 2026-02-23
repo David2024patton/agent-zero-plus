@@ -1,0 +1,65 @@
+<html>
+
+<head>
+    <title>Model Failover</title>
+</head>
+
+<body>
+    <div x-data>
+        <template x-if="$store.settings">
+            <div>
+                <div class="section-title">Model Failover</div>
+                <div class="section-description">
+                    Automatically retry with alternative models when the primary model fails,
+                    times out, or hits rate limits. Define a priority chain of fallback providers.
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Enable Model Failover</div>
+                        <div class="field-description">Automatically try fallback models on failure.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="$store.settings.model_failover_enabled" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Failover Provider Chain</div>
+                        <div class="field-description">
+                            Comma-separated list of provider:model pairs to try in order.
+                            Primary model from Chat Model settings is always tried first.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <textarea class="text-input" x-model="$store.settings.model_failover_providers"
+                            placeholder="openrouter:anthropic/claude-sonnet-4, openai:gpt-4o, ollama:llama3"
+                            rows="3"></textarea>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Air-Gapped Mode</div>
+                        <div class="field-description">
+                            Disable all external API calls. Only local models (Ollama) will be used.
+                            No data leaves your machine.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="$store.settings.air_gapped_mode" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,32 @@
+{
+    "id": "webhook_channel",
+    "name": "Webhook (Generic)",
+    "description": "Generic HTTP webhook endpoint. Send JSON payloads to trigger Agent Zero and receive responses.",
+    "version": "1.0.0",
+    "type": "channel",
+    "entry": "__init__.py",
+    "config": {
+        "webhook_path": {
+            "label": "Webhook Path",
+            "description": "URL path for the webhook endpoint (e.g. /webhook/agent)",
+            "type": "text",
+            "default": "/webhook/agent",
+            "sensitive": false
+        },
+        "auth_token": {
+            "label": "Auth Token",
+            "description": "Bearer token required in requests. Leave empty to disable auth.",
+            "type": "password",
+            "env": "WEBHOOK_AUTH_TOKEN",
+            "default": "",
+            "sensitive": true
+        },
+        "response_mode": {
+            "label": "Response Mode",
+            "description": "sync = wait for response, async = return immediately with task ID",
+            "type": "text",
+            "default": "sync",
+            "sensitive": false
+        }
+    }
+}

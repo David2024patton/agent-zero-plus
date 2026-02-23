@@ -1,0 +1,66 @@
+<html>
+
+<head>
+    <title>Teams Plugin</title>
+</head>
+
+<body>
+    <div x-data>
+        <template x-if="$store.settings">
+            <div>
+                <div class="section-title">Microsoft Teams</div>
+                <div class="section-description">
+                    Connect Agent Zero to Microsoft Teams. Supports channel messages, DMs,
+                    adaptive cards, and meeting notifications.
+                    <br><br>
+                    📖 <strong>Setup Guide:</strong>
+                    <a href="https://learn.microsoft.com/en-us/microsoftteams/platform/bots/how-to/create-a-bot-for-teams"
+                        target="_blank" rel="noopener">
+                        Create a Teams Bot</a> —
+                    Register your bot in the
+                    <a href="https://dev.botframework.com/bots/new" target="_blank" rel="noopener">Bot Framework
+                        Portal</a>,
+                    then copy the App ID and App Password (client secret) below.
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Enable Teams Plugin</div>
+                        <div class="field-description">Start the Teams bot when Agent Zero launches.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="$store.settings.settings.plugin_teams_enabled" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">App ID</div>
+                        <div class="field-description">Microsoft Bot Framework App ID.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="text" class="text-input" x-model="$store.settings.settings.plugin_teams_app_id"
+                            placeholder="Enter App ID" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">App Password</div>
+                        <div class="field-description">Microsoft Bot Framework App Password (client secret).</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="password" class="text-input"
+                            x-model="$store.settings.settings.plugin_teams_app_password"
+                            placeholder="Enter app password" />
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+</body>
+
+</html>

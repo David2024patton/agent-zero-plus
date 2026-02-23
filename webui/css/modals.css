@@ -15,6 +15,7 @@ some classes like modal-header are shared between the old and the new system */
   height: 100%;
   z-index: 2000;
 }
+
 .modal.show {
   display: block;
 }
@@ -29,7 +30,7 @@ some classes like modal-header are shared between the old and the new system */
   transform: translate(-50%, -50%);
   background-color: var(--color-background);
   width: 90%;
-  max-width: 960px;
+  max-width: 1400px;
   max-height: 90vh;
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -66,7 +67,8 @@ some classes like modal-header are shared between the old and the new system */
 .modal-container {
   background-color: var(--color-panel);
   border-radius: 12px;
-  width: 1100px; /* Reduced from 1200px to 1100px */
+  width: 1100px;
+  /* Reduced from 1200px to 1100px */
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -86,6 +88,7 @@ some classes like modal-header are shared between the old and the new system */
   color: var(--color-primary);
   border-bottom: 1px solid var(--color-border);
 }
+
 .modal-header h2 {
   margin: 0;
 }
@@ -139,6 +142,15 @@ some classes like modal-header are shared between the old and the new system */
   padding: 0 1rem 1rem 1rem;
 }
 
+/* When modal containers hold the settings sidebar layout, disable outer scroll */
+.modal-scroll:has(.settings-content),
+.modal-content:has(.settings-content) {
+  overflow-y: hidden !important;
+  overflow-x: hidden !important;
+  padding: 0 !important;
+  height: auto !important;
+}
+
 .modal-x {
   position: absolute;
   top: 1rem;
@@ -153,21 +165,28 @@ some classes like modal-header are shared between the old and the new system */
   z-index: 3;
 }
 
-.modal-content::-webkit-scrollbar, .modal-scroll::-webkit-scrollbar {
+.modal-content::-webkit-scrollbar,
+.modal-scroll::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
-.modal-content::-webkit-scrollbar-track, .modal-scroll::-webkit-scrollbar-track {
+
+.modal-content::-webkit-scrollbar-track,
+.modal-scroll::-webkit-scrollbar-track {
   background: transparent;
   margin: 4px 0;
   border-radius: 6px;
 }
-.modal-content::-webkit-scrollbar-thumb, .modal-scroll::-webkit-scrollbar-thumb {
+
+.modal-content::-webkit-scrollbar-thumb,
+.modal-scroll::-webkit-scrollbar-thumb {
   background-color: rgba(155, 155, 155, 0.5);
   border-radius: 6px;
   transition: background-color 0.2s ease;
 }
-.modal-content::-webkit-scrollbar-thumb:hover, .modal-scroll::-webkit-scrollbar-thumb:hover {
+
+.modal-content::-webkit-scrollbar-thumb:hover,
+.modal-scroll::-webkit-scrollbar-thumb:hover {
   background-color: rgba(155, 155, 155, 0.7);
 }
 
@@ -181,15 +200,18 @@ some classes like modal-header are shared between the old and the new system */
   background: var(--color-background);
   gap: 1rem;
 }
+
 .modal-inner.modal-with-footer {
   display: flex;
   flex-direction: column;
 }
+
 .modal-inner.modal-with-footer .modal-scroll {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
 }
+
 .modal-footer-slot {
   flex-shrink: 0;
   border-top: 1px solid var(--color-border);
@@ -204,12 +226,14 @@ some classes like modal-header are shared between the old and the new system */
   border: 1px solid var(--color-border);
   border-radius: 0.5rem;
 }
+
 .section-title {
   font-size: 1.25rem;
   font-weight: bold;
   color: var(--color-primary);
   margin-bottom: 0.5rem;
 }
+
 .section-description {
   color: var(--color-text);
   margin-bottom: 1rem;
@@ -223,6 +247,7 @@ some classes like modal-header are shared between the old and the new system */
   width: 100%;
   margin-top: 20px;
 }
+
 .modal-button-container .button {
   flex: 1;
   min-width: 0;
@@ -234,6 +259,7 @@ some classes like modal-header are shared between the old and the new system */
   justify-content: center;
   align-items: center;
 }
+
 #buttons-container {
   display: flex;
   gap: 0.875rem !important;
@@ -249,17 +275,21 @@ some classes like modal-header are shared between the old and the new system */
   font-size: 0.875rem;
   font-family: "Rubik", Arial, Helvetica, sans-serif;
 }
+
 .btn.slim {
   padding: 0.2em 0.4em;
 }
+
 .btn.primary {
   background: #2196f3;
   color: white;
   width: fit-content;
 }
+
 .btn:disabled {
   cursor: not-allowed;
 }
+
 .btn-ok {
   background: #4248f1;
   color: white;
@@ -268,42 +298,52 @@ some classes like modal-header are shared between the old and the new system */
   gap: 0.5rem;
   transition: background 0.3s ease-in-out;
 }
-.btn-ok > svg {
+
+.btn-ok>svg {
   max-width: 20px;
 }
+
 .btn-ok:hover {
   background: #353bc5;
 }
+
 .btn-ok:active {
   background: #2b309c;
 }
+
 .btn-cancel {
   background: transparent;
   color: var(--color-accent);
   border: 0.15rem solid var(--color-accent);
   transition: background 0.3s ease-in-out, color 0.3s ease-in-out;
 }
+
 .btn-cancel:hover {
   background: var(--color-accent);
   color: var(--color-text);
 }
+
 .btn-cancel:active {
   background: #a94658;
   color: var(--color-text);
 }
+
 .light-mode .btn-cancel:hover {
   background: var(--color-accent);
   color: var(--color-background);
 }
+
 .light-mode .btn-cancel:active {
   background: #a94658;
   color: var(--color-background);
 }
+
 .btn-field {
   background: #2196f3;
   color: white;
   width: fit-content;
 }
+
 .btn-field:disabled {
   background: #ccc;
   cursor: not-allowed;
@@ -319,9 +359,11 @@ some classes like modal-header are shared between the old and the new system */
   background-color: rgba(30, 30, 30, 0.95);
   border-bottom: 1px solid var(--color-border);
 }
+
 .light-mode .editor-toolbar {
   background-color: rgba(240, 240, 240, 0.95);
 }
+
 .toolbar-group {
   display: flex;
   align-items: center;
@@ -329,9 +371,11 @@ some classes like modal-header are shared between the old and the new system */
   padding: 0 0.5rem;
   border-right: 1px solid var(--color-border);
 }
+
 .toolbar-group:last-child {
   border-right: none;
 }
+
 .toolbar-button {
   display: flex;
   align-items: center;
@@ -347,26 +391,32 @@ some classes like modal-header are shared between the old and the new system */
   cursor: pointer;
   transition: all 0.2s ease;
 }
+
 .toolbar-button svg {
   width: 18px;
   height: 18px;
 }
+
 .toolbar-button:hover {
   opacity: 1;
   background-color: rgba(255, 255, 255, 0.1);
 }
+
 .toolbar-button:active {
   transform: translateY(1px);
 }
+
 .toolbar-button.active {
   background-color: rgba(255, 255, 255, 0.15);
   border-color: var(--color-border);
   opacity: 1;
 }
+
 .toolbar-button:disabled {
   opacity: 0.3;
   cursor: not-allowed;
 }
+
 .toolbar-button:disabled:hover {
   background-color: transparent;
 }
@@ -383,6 +433,7 @@ input[type="range"] {
   outline: none;
   transition: all 0.2s ease;
 }
+
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
@@ -413,6 +464,7 @@ input[type="range"]::-moz-range-thumb {
 .light-mode input[type="range"]::-webkit-slider-thumb {
   background: #777;
 }
+
 .light-mode input[type="range"]::-moz-range-thumb {
   background: #777;
 }
@@ -421,26 +473,32 @@ input[type="range"]::-moz-range-thumb {
 @media (max-width: 1280px) {
   .modal-container {
     width: 95%;
-    min-width: unset; /* Remove min-width constraints */
+    min-width: unset;
+    /* Remove min-width constraints */
     max-width: 95%;
   }
+
   .section {
     overflow-x: auto;
   }
 }
+
 @media (max-width: 768px) {
   .modal-header {
     padding-left: 1.1rem;
     text-wrap: nowrap;
   }
+
   .modal-content {
     padding: 0.5rem;
     overflow-y: auto;
     flex-grow: 1;
   }
+
   .modal-footer {
     padding: var(--spacing-sm) !important;
   }
+
   .section {
     margin-bottom: 1.5rem;
     padding: 1rem;
@@ -448,31 +506,38 @@ input[type="range"]::-moz-range-thumb {
     border: 1px solid var(--color-border);
     border-radius: 0.5rem;
   }
+
   #buttons-container {
     margin: 0 auto;
   }
+
   .btn {
     padding: 0.5rem 1.7rem;
   }
 }
+
 @media (max-width: 540px) {
   .modal-header h2 {
     font-size: var(--font-size-normal);
     margin: 0;
   }
+
   #buttons-container {
     max-height: 50px;
   }
+
   .btn {
     text-wrap: wrap;
     font-size: var(--font-size-small);
   }
+
   .btn-upload {
     margin: 0 auto;
     gap: 0.5rem;
     align-items: center;
   }
-  .btn-upload > svg {
+
+  .btn-upload>svg {
     width: 20px;
   }
 }
@@ -494,6 +559,7 @@ input[type="range"]::-moz-range-thumb {
   0% {
     opacity: 0;
   }
+
   100% {
     opacity: 1;
   }
@@ -506,12 +572,10 @@ input[type="range"]::-moz-range-thumb {
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    var(--color-background),
-    var(--color-border),
-    var(--color-background)
-  );
+  background: linear-gradient(90deg,
+      var(--color-background),
+      var(--color-border),
+      var(--color-background));
   animation: shimmer 2s infinite;
   animation-delay: 250ms;
   background-size: 200% 100%;
@@ -521,6 +585,7 @@ input[type="range"]::-moz-range-thumb {
   0% {
     background-position: 200% 0;
   }
+
   100% {
     background-position: -200% 0;
   }

@@ -1,142 +1,231 @@
 <html>
+
 <head>
   <title>Settings</title>
 </head>
 
 <body>
-<script type="module">
-  import { store as settingsStore } from "/components/settings/settings-store.js";
-</script>
+  <script type="module">
+    import { store as settingsStore } from "/components/settings/settings-store.js";
+  </script>
 
-<div x-data>
-  <template x-if="$store.settings">
-    <div x-init="$store.settings.onOpen()" x-destroy="$store.settings.cleanup()">
+  <div x-data>
+    <template x-if="$store.settings">
+      <div x-init="$store.settings.onOpen()" x-destroy="$store.settings.cleanup()">
 
-      <!-- Loading state -->
-      <div x-show="$store.settings.isLoading && !$store.settings.settings" class="settings-loading">
-        <span class="material-symbols-outlined spinning">progress_activity</span>
-        <span>Loading settings...</span>
-      </div>
+        <!-- Loading state -->
+        <div x-show="$store.settings.isLoading && !$store.settings.settings" class="settings-loading">
+          <span class="material-symbols-outlined spinning">progress_activity</span>
+          <span>Loading settings...</span>
+        </div>
 
-      <!-- Error state -->
-      <div x-show="$store.settings.error && !$store.settings.settings" class="settings-error">
-        <span class="material-symbols-outlined">error</span>
-        <span x-text="$store.settings.error"></span>
-        <button class="btn btn-retry" @click="$store.settings.onOpen()">Retry</button>
-      </div>
+        <!-- Error state -->
+        <div x-show="$store.settings.error && !$store.settings.settings" class="settings-error">
+          <span class="material-symbols-outlined">error</span>
+          <span x-text="$store.settings.error"></span>
+          <button class="btn btn-retry" @click="$store.settings.onOpen()">Retry</button>
+        </div>
 
-      <!-- Settings content -->
-      <div x-show="$store.settings.settings" class="settings-content">
-        <!-- Tab Navigation -->
-        <div class="settings-tabs-container">
-          <div class="settings-tabs no-scrollbar">
-            <div class="settings-tab"
-                 :class="{'active': $store.settings.activeTab === 'agent'}"
-                 @click="$store.settings.switchTab('agent')"
-                 title="Agent Settings">Agent Settings</div>
-            <div class="settings-tab"
-                 :class="{'active': $store.settings.activeTab === 'skills'}"
-                 @click="$store.settings.switchTab('skills')"
-                 title="Skills">Skills</div>
-            <div class="settings-tab"
-                 :class="{'active': $store.settings.activeTab === 'external'}"
-                 @click="$store.settings.switchTab('external')"
-                 title="External Services">External Services</div>
-            <div class="settings-tab" 
-                 :class="{'active': $store.settings.activeTab === 'mcp'}"
-                 @click="$store.settings.switchTab('mcp')" 
-                 title="MCP">MCP/A2A</div>
-            <div class="settings-tab" 
-                 :class="{'active': $store.settings.activeTab === 'developer'}"
-                 @click="$store.settings.switchTab('developer')" 
-                 title="Developer">Developer</div>
-            <div class="settings-tab"
-                 :class="{'active': $store.settings.activeTab === 'backup'}"
-                 @click="$store.settings.switchTab('backup')"
-                 title="Backup & Restore">Backup & Restore</div>
+        <!-- Settings content -->
+        <div x-show="$store.settings.settings" class="settings-content">
+          <!-- Tab Navigation -->
+          <div class="settings-tabs-container">
+            <div class="settings-tabs no-scrollbar">
+              <template x-for="tab in [
+                { id: 'agent', label: 'Agent Settings', subs: [
+                  { id: 'agent-config', label: 'Agent Config' },
+                  { id: 'chat-model', label: 'Chat Model' },
+                  { id: 'util-model', label: 'Utility Model' },
+                  { id: 'browser-model', label: 'Browser Model' },
+                  { id: 'subagent-model', label: 'Sub-Agent Model' },
+                  { id: 'embed-model', label: 'Embedding Model' },
+                  { id: 'memory', label: 'Memory' },
+                  { id: 'speech', label: 'Speech' },
+                  { id: 'workdir', label: 'Workdir' },
+                ] },
+                { id: 'skills', label: 'Skills', subs: [
+                  { id: 'skills-list', label: 'List Skills' },
+                  { id: 'skills-import', label: 'Import Skills' },
+                ] },
+                { id: 'tools', label: 'Tools', subs: [
+                  { id: 'tools-list', label: 'List Tools' },
+                ] },
+                { id: 'external', label: 'External Services', subs: [
+                  { id: 'api-keys', label: 'API Keys' },
+                  { id: 'secrets', label: 'Secrets' },
+                  { id: 'auth', label: 'Authentication' },
+                  { id: 'external-api', label: 'External API' },
+                  { id: 'update-checker', label: 'Update Checker' },
+                  { id: 'elevenlabs', label: 'ElevenLabs TTS' },
+                  { id: 'model-failover', label: 'Model Failover' },
+                  { id: 'cloudflare', label: 'Cloudflare' },
+                  { id: 'tunnel', label: 'Flare Tunnel' },
+                ] },
+                { id: 'litellm', label: 'LiteLLM', subs: [
+                  { id: 'general', label: 'General' },
+                  { id: 'litellm-api-keys', label: 'API Keys' },
+                  { id: 'caching', label: 'Caching' },
+                  { id: 'proxy-auth', label: 'Proxy Auth' },
+                  { id: 'advanced', label: 'Advanced' },
+                ] },
+                { id: 'mcp', label: 'MCP/A2A', subs: [] },
+                { id: 'developer', label: 'Developer', subs: [
+                  { id: 'dev-general', label: 'Development' },
+                  { id: 'dev-subagents', label: 'Sub-Agents' },
+                  { id: 'dev-sandbox', label: 'Sandbox & Security' },
+                  { id: 'dev-cron', label: 'Cron Webhooks' },
+                  { id: 'dev-webmcp', label: 'WebMCP' },
+                  { id: 'dev-lifecycle', label: 'Lifecycle' },
+                  { id: 'dev-sysinfo', label: 'System Info' },
+                ] },
+                { id: 'backup', label: 'Backup & Restore', subs: [] },
+                { id: 'plugins', label: 'Plugins', subs: [
+                  { id: 'plugins-list', label: 'List Plugins' },
+                  { id: 'plugins-import', label: 'Import' },
+                  { id: 'plugins-discord', label: '🎮 Discord' },
+                  { id: 'plugins-email', label: '📧 Email' },
+                  { id: 'plugins-telegram', label: '📱 Telegram' },
+                  { id: 'plugins-slack', label: '💼 Slack' },
+                  { id: 'plugins-teams', label: '🏢 Teams' },
+                  { id: 'plugins-whatsapp', label: '📲 WhatsApp' },
+                  { id: 'plugins-matrix', label: '🔷 Matrix' },
+                  { id: 'plugins-webhook', label: '🔗 Webhook' },
+                  { id: 'plugins-openclaw', label: '⚙️ OpenClaw' },
+                ] },
+                { id: 'swarm', label: 'Swarms', subs: [
+                  { id: 'swarm-general', label: 'General' },
+                  { id: 'swarm-limits', label: 'Limits & Safety' },
+                  { id: 'swarm-tiers', label: 'Model Tiers' },
+                  { id: 'swarm-manifests', label: 'Agent Manifests' },
+                ] },
+                { id: 'logs', label: 'Logs', subs: [] },
+              ]" :key="tab.id">
+                <div>
+                  <!-- Parent tab -->
+                  <div class="settings-tab"
+                    :class="{'active': $store.settings.activeTab === tab.id, 'has-children': tab.subs.length > 0}"
+                    @click="$store.settings.switchTab(tab.id)" :title="tab.label">
+                    <span x-text="tab.label"></span>
+                    <span class="tab-chevron" x-show="tab.subs.length > 0"
+                      :class="{'expanded': $store.settings.activeTab === tab.id && $store.settings._tabExpanded}">›</span>
+                  </div>
+                  <!-- Sub-items (collapsible) -->
+                  <template x-if="tab.subs.length > 0">
+                    <div class="settings-sub-items"
+                      x-show="$store.settings.activeTab === tab.id && $store.settings._tabExpanded"
+                      x-transition:enter="sub-items-enter" x-transition:enter-start="sub-items-enter-start"
+                      x-transition:enter-end="sub-items-enter-end" x-transition:leave="sub-items-leave"
+                      x-transition:leave-start="sub-items-leave-start" x-transition:leave-end="sub-items-leave-end">
+                      <template x-for="sub in tab.subs" :key="sub.id">
+                        <div class="settings-sub-item" :class="{'active': $store.settings.activeSubTab === sub.id}"
+                          @click.stop="$store.settings.activeSubTab = sub.id" x-text="sub.label"></div>
+                      </template>
+                    </div>
+                  </template>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- Settings sections for agent, external, developer, mcp, backup tabs -->
+          <div id="settings-sections">
+            <div x-show="$store.settings.activeTab === 'agent'">
+              <x-component path="settings/agent/agent-settings.html"></x-component>
+            </div>
+            <div x-show="$store.settings.activeTab === 'external'">
+              <x-component path="settings/external/external-settings.html"></x-component>
+            </div>
+            <div x-show="$store.settings.activeTab === 'litellm'">
+              <x-component path="settings/litellm/litellm-settings.html"></x-component>
+            </div>
+            <div x-show="$store.settings.activeTab === 'mcp'">
+              <x-component path="settings/mcp/mcp-settings.html"></x-component>
+            </div>
+            <div x-show="$store.settings.activeTab === 'developer'">
+              <x-component path="settings/developer/developer-settings.html"></x-component>
+            </div>
+            <div x-show="$store.settings.activeTab === 'backup'">
+              <x-component path="settings/backup/backup-settings.html"></x-component>
+            </div>
+            <div x-show="$store.settings.activeTab === 'skills'">
+              <x-component path="settings/skills/skills-settings.html"></x-component>
+            </div>
+            <div x-show="$store.settings.activeTab === 'tools'">
+              <x-component path="settings/tools/tools-settings.html"></x-component>
+            </div>
+            <div x-show="$store.settings.activeTab === 'logs'">
+              <x-component path="settings/logs-settings.html"></x-component>
+            </div>
+            <div x-show="$store.settings.activeTab === 'plugins'">
+              <x-component path="settings/plugins/plugins-settings.html"></x-component>
+            </div>
+            <div x-show="$store.settings.activeTab === 'swarm'">
+              <x-component path="settings/swarm/swarm-settings.html"></x-component>
+            </div>
           </div>
         </div>
 
-        <!-- Settings sections for agent, external, developer, mcp, backup tabs -->
-        <div id="settings-sections">
-          <div x-show="$store.settings.activeTab === 'agent'">
-            <x-component path="settings/agent/agent-settings.html"></x-component>
-          </div>
-          <div x-show="$store.settings.activeTab === 'external'">
-            <x-component path="settings/external/external-settings.html"></x-component>
-          </div>
-          <div x-show="$store.settings.activeTab === 'mcp'">
-            <x-component path="settings/mcp/mcp-settings.html"></x-component>
-          </div>
-          <div x-show="$store.settings.activeTab === 'developer'">
-            <x-component path="settings/developer/developer-settings.html"></x-component>
-          </div>
-          <div x-show="$store.settings.activeTab === 'backup'">
-            <x-component path="settings/backup/backup-settings.html"></x-component>
-          </div>
-          <div x-show="$store.settings.activeTab === 'skills'">
-            <x-component path="settings/skills/skills-settings.html"></x-component>
-          </div>
+        <!-- Footer -->
+        <div class="modal-footer" data-modal-footer x-show="$store.settings.settings">
+          <button class="btn btn-ok" @click="$store.settings.saveAndClose()" :disabled="$store.settings?.isLoading">
+            Save
+          </button>
+          <button class="btn btn-cancel" @click="$store.settings.closeSettings()">
+            Cancel
+          </button>
         </div>
-      </div>
 
-      <!-- Footer -->
-      <div class="modal-footer" data-modal-footer x-show="$store.settings.settings">
-        <button class="btn btn-ok" 
-            @click="$store.settings.saveAndClose()"
-            :disabled="$store.settings?.isLoading">
-        Save
-        </button>
-        <button class="btn btn-cancel" 
-                @click="$store.settings.closeSettings()">
-          Cancel
-        </button>
       </div>
-
-    </div>
-  </template>
-</div>
+    </template>
+  </div>
 </body>
+
 </html>
 
 <style>
-.settings-loading,
-.settings-error {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  padding: 2rem;
-  color: var(--color-text-secondary, #999);
-  font-size: 1rem;
-}
+  .settings-loading,
+  .settings-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 2rem;
+    color: var(--color-text-secondary, #999);
+    font-size: 1rem;
+  }
 
-.settings-error {
-  flex-direction: column;
-  color: var(--color-error, #e74c3c);
-}
+  .settings-error {
+    flex-direction: column;
+    color: var(--color-error, #e74c3c);
+  }
 
-.settings-error .material-symbols-outlined {
-  font-size: 2rem;
-}
+  .settings-error .material-symbols-outlined {
+    font-size: 2rem;
+  }
 
-.settings-error .btn-retry {
-  margin-top: 1rem;
-}
+  .settings-error .btn-retry {
+    margin-top: 1rem;
+  }
 
-.settings-content {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
+  .settings-content {
+    display: flex;
+    flex-direction: row;
+    gap: 0;
+    height: calc(90vh - 120px);
+    overflow: hidden;
+  }
 
-.spinning {
-  animation: spin 1s linear infinite;
-}
+  .spinning {
+    animation: spin 1s linear infinite;
+  }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+
+    to {
+      transform: rotate(360deg);
+    }
+  }
 </style>
-

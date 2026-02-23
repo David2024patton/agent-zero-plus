@@ -1,0 +1,91 @@
+{
+    "id": "email_channel",
+    "name": "Email Channel",
+    "description": "Connect Agent Zero to email via IMAP/SMTP. Polls for incoming emails and replies via SMTP.",
+    "version": "1.0.0",
+    "type": "channel",
+    "entry": "__init__.py",
+    "config": {
+        "imap_host": {
+            "label": "IMAP Host",
+            "description": "IMAP server hostname (e.g. imap.gmail.com)",
+            "type": "text",
+            "default": "",
+            "sensitive": false
+        },
+        "imap_port": {
+            "label": "IMAP Port",
+            "description": "IMAP server port (993 for TLS, 143 for plain)",
+            "type": "text",
+            "default": "993",
+            "sensitive": false
+        },
+        "imap_user": {
+            "label": "IMAP Username",
+            "description": "Email address or username for IMAP login",
+            "type": "text",
+            "env": "EMAIL_IMAP_USER",
+            "default": "",
+            "sensitive": false
+        },
+        "imap_password": {
+            "label": "IMAP Password",
+            "description": "Password or app-specific password for IMAP login",
+            "type": "password",
+            "env": "EMAIL_IMAP_PASSWORD",
+            "default": "",
+            "sensitive": true
+        },
+        "smtp_host": {
+            "label": "SMTP Host",
+            "description": "SMTP server hostname (e.g. smtp.gmail.com)",
+            "type": "text",
+            "default": "",
+            "sensitive": false
+        },
+        "smtp_port": {
+            "label": "SMTP Port",
+            "description": "SMTP server port (587 for STARTTLS, 465 for SSL)",
+            "type": "text",
+            "default": "587",
+            "sensitive": false
+        },
+        "smtp_user": {
+            "label": "SMTP Username",
+            "description": "Email address or username for SMTP login (often same as IMAP)",
+            "type": "text",
+            "env": "EMAIL_SMTP_USER",
+            "default": "",
+            "sensitive": false
+        },
+        "smtp_password": {
+            "label": "SMTP Password",
+            "description": "Password or app-specific password for SMTP login",
+            "type": "password",
+            "env": "EMAIL_SMTP_PASSWORD",
+            "default": "",
+            "sensitive": true
+        },
+        "use_tls": {
+            "label": "Use TLS",
+            "description": "Use TLS/SSL encryption for both IMAP and SMTP connections",
+            "type": "switch",
+            "default": true,
+            "sensitive": false
+        },
+        "poll_interval": {
+            "label": "Poll Interval (seconds)",
+            "description": "How often to check for new emails (in seconds)",
+            "type": "text",
+            "default": "30",
+            "sensitive": false
+        },
+        "allowed_senders": {
+            "label": "Allowed Senders",
+            "description": "Comma-separated email addresses. Only emails from these senders will be processed. Leave empty for all.",
+            "type": "text",
+            "default": "",
+            "sensitive": false
+        }
+    }
+}

@@ -1,0 +1,170 @@
+<html>
+
+<head>
+    <title>Discord Plugin</title>
+</head>
+
+<body>
+    <div x-data>
+        <template x-if="$store.settings">
+            <div>
+                <div class="section-title">Discord Bot</div>
+                <div class="section-description">
+                    Connect Agent Zero to Discord. Responds to DMs, @mentions, and command prefixes.
+                    Requires <code>discord.py</code>.
+                    <br><br>
+                    📖 <strong>Setup Guide:</strong>
+                    <a href="https://discord.com/developers/applications" target="_blank" rel="noopener">
+                        Discord Developer Portal</a> —
+                    Create an application, add a Bot, copy the token, and invite the bot to your server
+                    with the necessary permissions.
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Enable Discord Plugin</div>
+                        <div class="field-description">Start the Discord bot when Agent Zero launches.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="$store.settings.settings.plugin_discord_enabled" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Bot Token</div>
+                        <div class="field-description">Discord bot token from the Developer Portal.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="password" class="text-input"
+                            x-model="$store.settings.settings.plugin_discord_bot_token"
+                            placeholder="Enter Discord bot token" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Owner User ID</div>
+                        <div class="field-description">Your Discord user ID. Only this user can DM the bot. Leave
+                            empty to allow all.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="text" class="text-input"
+                            x-model="$store.settings.settings.plugin_discord_owner_user_id"
+                            placeholder="Your Discord user ID" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Command Prefix</div>
+                        <div class="field-description">Prefix for bot commands in server channels (e.g. !a0 hello).
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <input type="text" class="text-input"
+                            x-model="$store.settings.settings.plugin_discord_command_prefix" placeholder="!a0" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Respond to DMs</div>
+                        <div class="field-description">Allow the bot to respond to direct messages.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="$store.settings.settings.plugin_discord_respond_dms" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Respond to Mentions</div>
+                        <div class="field-description">Allow the bot to respond when @mentioned in channels.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="$store.settings.settings.plugin_discord_respond_mentions" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 1.5rem;">Advanced Features <span
+                        style="opacity: 0.5; font-size: 0.8em;">(OpenClaw-compatible)</span></div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Thread Bindings</div>
+                        <div class="field-description">Enable <code>/a0 focus</code> and <code>/a0 unfocus</code> to
+                            bind Discord
+                            threads to sub-agent sessions.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="$store.settings.settings.plugin_discord_thread_bindings" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Thread Binding TTL (hours)</div>
+                        <div class="field-description">Auto-unfocus threads after this many hours of inactivity (0 =
+                            never).
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <input type="text" class="text-input"
+                            x-model="$store.settings.settings.plugin_discord_thread_ttl" placeholder="24" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Streaming Mode</div>
+                        <div class="field-description">Live stream preview: <code>off</code>, <code>partial</code>
+                            (edit single message as tokens arrive), or <code>block</code> (chunked drafts).</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="text" class="text-input"
+                            x-model="$store.settings.settings.plugin_discord_streaming_mode" placeholder="off" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">DM Policy</div>
+                        <div class="field-description">DM access policy: <code>open</code> (anyone), <code>owner</code>
+                            (owner only), <code>pairing</code> (code-based), <code>disabled</code>.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="text" class="text-input"
+                            x-model="$store.settings.settings.plugin_discord_dm_policy" placeholder="owner" />
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 1.5rem;">Slash Commands</div>
+                <div class="section-description">
+                    14 native Discord slash commands are available under <code>/a0</code>:
+                    <br><code>/a0 help</code> • <code>/a0 status</code> • <code>/a0 model</code> •
+                    <code>/a0 reset</code> • <code>/a0 stop</code> • <code>/a0 whoami</code> •
+                    <code>/a0 agents</code> • <code>/a0 focus</code> • <code>/a0 unfocus</code> •
+                    <code>/a0 subagents</code> • <code>/a0 config</code> • <code>/a0 verbose</code> •
+                    <code>/a0 usage</code> • <code>/a0 clear</code>
+                    <br><br>Commands sync automatically when the bot connects. Use <code>/a0 help</code> in Discord
+                    to see all available commands.
+                </div>
+            </div>
+        </template>
+    </div>
+</body>
+
+</html>
