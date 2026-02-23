@@ -3,12 +3,27 @@ Send and read emails via SMTP/IMAP. Requires EMAIL_ADDRESS and EMAIL_PASSWORD en
 Optionally set EMAIL_SMTP_HOST, EMAIL_SMTP_PORT, EMAIL_IMAP_HOST, EMAIL_IMAP_PORT (defaults: Titan Email).
 Methods: send, read, count.
 
-## CRITICAL: Email formatting rules
-- **Always send ONE email per request. Never send two emails for the same task.**
-- **Always use the `html` parameter** for outgoing emails so they render beautifully.
-- **Always provide a plain `body` fallback** alongside the `html` for email clients that don't render HTML.
-- When summarizing news, articles, or research: include a short summary of each item AND a clickable reference link in the same email.
-- Use the branded HTML template below as your starting point for all outgoing emails.
+## CRITICAL: Email behavior rules — READ CAREFULLY
+
+### Rule 1: ONE email per task — NEVER TWO
+- You must call email_tool EXACTLY ONCE per user request. That single email must contain ALL content.
+- **NEVER send a second email to confirm, summarize, or follow up on an email you just sent.**
+- **NEVER send a "branded" or "confirmation" email after a content email. That IS the double-send bug.**
+- Combine everything — the greeting, the content, the summaries, the links — into ONE email.
+
+### Rule 2: After sending an email, STOP emailing
+- After email_tool returns "Email sent to...", your NEXT action must be the `response` tool.
+- Tell the user in chat that the email was sent. Do NOT send another email about it.
+- Example flow: email_tool (send) → response ("Done! Email sent to david@example.com with the subject...")
+
+### Rule 3: Always use the `html` parameter
+- Use the `html` parameter for a rich branded template.
+- Also include a plain `body` fallback with the same content as readable text.
+- ALL links, summaries, articles, and references go INSIDE the single HTML email.
+
+### Rule 4: Content completeness
+- When summarizing news/articles/research: every item must have a summary AND a clickable reference link.
+- Do not separate "pretty formatting" from "useful links" — they go together in one email.
 
 **Send email (HTML with links — use this pattern always):**
 ~~~json
