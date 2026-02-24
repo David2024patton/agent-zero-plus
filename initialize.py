@@ -189,7 +189,10 @@ def initialize_plugins():
                     )
 
                 # Send the user message through the agent
-                user_msg = UserMessage(message=message.content)
+                user_msg = UserMessage(
+                    message=message.content,
+                    attachments=message.attachments,
+                )
                 task = context.communicate(user_msg)
 
                 # Wait for the agent to finish processing
@@ -203,10 +206,15 @@ def initialize_plugins():
                     # branded template. Only auto-reply for chat channels
                     # (Discord, Telegram, Slack) where the bot must respond in-channel.
                     if response and message.channel_id != "email":
+                        # Collect any files generated during this turn
+                        # (e.g. images from image_gen_tool)
+                        generated_files = context.data.pop("_generated_files", [])
+                        # Also try _extract from response text (belt-and-suspenders)
                         await loader.send(
                             message.channel_id,
                             to=message.sender_id,
                             content=str(response),
+                            attachments=generated_files if generated_files else None,
                         )
             except Exception as e:
                 import traceback

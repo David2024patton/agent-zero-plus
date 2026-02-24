@@ -219,6 +219,12 @@ class ImageGenTool(Tool):
                                 f.write(img_bytes)
                             lines.append(f"- Saved to: `{fname}`")
                             img_count += 1
+                            
+                            # Register generated file for auto-attachment
+                            # (so Discord/channel adapters can attach it)
+                            gen_files = self.agent.context.data.get("_generated_files", [])
+                            gen_files.append(fname)
+                            self.agent.context.data["_generated_files"] = gen_files
 
             if img_count == 0:
                 return Response(message="Gemini returned a response but no images were found.", break_loop=False)

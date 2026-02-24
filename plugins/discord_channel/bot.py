@@ -103,6 +103,7 @@ class DiscordChannelAdapter(ChannelAdapter):
             policy="owner",
             owner_user_id=owner_user_id,
         )
+        self._project_manager = None  # Initialized on start() after imports
     
     async def start(self):
         """Start the Discord bot."""
@@ -133,6 +134,15 @@ class DiscordChannelAdapter(ChannelAdapter):
         except Exception as e:
             logger.error(f"Failed to set up slash commands: {e}")
         
+        # --- Set up project system ---
+        try:
+            from .projects import ProjectManager
+            self._project_manager = ProjectManager(adapter=self)
+            logger.info("Project system initialized")
+        except Exception as e:
+            logger.error(f"Failed to initialize project system: {e}")
+            self._project_manager = None
+        
         @self._client.event
         async def on_ready():
             logger.info(f"Discord bot connected as: {self._client.user}")
@@ -148,7 +158,7 @@ class DiscordChannelAdapter(ChannelAdapter):
             try:
                 activity = discord.Activity(
                     type=discord.ActivityType.watching,
-                    name="Agent Zero",
+                    name="Skynet",
                 )
                 await self._client.change_presence(
                     status=discord.Status.online,
@@ -185,6 +195,28 @@ class DiscordChannelAdapter(ChannelAdapter):
             # Check if we should respond
             should_respond = False
             content = message.content
+            project_context = None  # Set if message is in a project channel
+            
+            # Project channel check — always respond, with access control
+            if self._project_manager and not isinstance(message.channel, discord.DMChannel):
+                has_access, project = self._project_manager.check_access(
+                    str(message.channel.id), str(message.author.id)
+                )
+                if project is not None:
+                    if not has_access:
+                        await message.reply(
+                            "🔒 You don't have access to this project.",
+                            mention_author=False,
+                        )
+                        return
+                    should_respond = True
+                    project_context = {
+                        "project_id": project.id,
+                        "project_name": project.name,
+                        "project_owner": project.user_id,
+                        "project_slug": project.slug,
+                    }
+                    self._project_manager.touch(str(message.channel.id))
             
             # Thread-bound messages always respond
             if thread_binding:
@@ -253,10 +285,37 @@ class DiscordChannelAdapter(ChannelAdapter):
             # Track usage
             self._usage_stats["message_count"] += 1
             
-            # Build attachments list
+            # Build attachments list — download text files inline, keep image URLs for VLM
             attachments = []
             for att in message.attachments:
-                attachments.append(att.url)
+                # Text-based files: download content and inject inline so the LLM can read them
+                is_text = (
+                    (att.content_type and att.content_type.startswith("text/"))
+                    or att.filename.lower().endswith((
+                        ".txt", ".md", ".csv", ".json", ".xml", ".yaml", ".yml",
+                        ".py", ".js", ".ts", ".html", ".css", ".sh", ".bat",
+                        ".log", ".cfg", ".ini", ".toml", ".env", ".sql",
+                    ))
+                )
+                if is_text:
+                    try:
+                        file_bytes = await att.read()
+                        text_content = file_bytes.decode("utf-8", errors="replace")
+                        # Truncate very large files to avoid context overflow
+                        if len(text_content) > 50000:
+                            text_content = text_content[:50000] + "\n... [truncated, file too large]"
+                        content += (
+                            f"\n\n--- Attached file: {att.filename} ---\n"
+                            f"{text_content}\n"
+                            f"--- End of {att.filename} ---"
+                        )
+                    except Exception as e:
+                        logger.warning(f"Failed to read text attachment {att.filename}: {e}")
+                        attachments.append(att.url)
+                else:
+                    # Images, PDFs, etc. — pass URL for VLM processing
+                    attachments.append(att.url)
+            
             
             # --- Lifecycle reactions ---
             async def _react(msg_ref, emoji):
@@ -279,9 +338,17 @@ class DiscordChannelAdapter(ChannelAdapter):
             )
 
             # Create ChannelMessage with lifecycle tracker
+            # Build the reply target so initialize.py knows where to send the response.
+            # For DMs, reply back via DM (user:<id>). For channels, reply to the channel.
+            is_dm = isinstance(message.channel, discord.DMChannel)
+            if is_dm:
+                reply_target = f"user:{message.author.id}"
+            else:
+                reply_target = f"channel:{message.channel.id}"
+
             channel_msg = ChannelMessage(
                 channel_id="discord",
-                sender_id=str(message.author.id),
+                sender_id=reply_target,
                 sender_name=message.author.display_name,
                 content=content,
                 attachments=attachments,
@@ -289,13 +356,16 @@ class DiscordChannelAdapter(ChannelAdapter):
                     "guild_id": str(message.guild.id) if message.guild else None,
                     "channel_id": str(message.channel.id),
                     "message_id": str(message.id),
-                    "is_dm": isinstance(message.channel, discord.DMChannel),
+                    "is_dm": is_dm,
                     "is_thread": isinstance(message.channel, discord.Thread),
                     "thread_binding": thread_binding,  # None or {target, user_id, bound_at}
                     "session_reset": channel_key in self._session_reset_channels,
                     "lifecycle_tracker": tracker,
                     "model_override": get_model_override("discord"),
                     "discord_message": message,  # For Components v2
+                    "reply_target": reply_target,  # Where to send the reply
+                    "author_id": str(message.author.id),  # Original author for context
+                    "project": project_context,  # None or {project_id, project_name, ...}
                 },
             )
             
@@ -332,11 +402,17 @@ class DiscordChannelAdapter(ChannelAdapter):
                            attachments: Optional[List[str]] = None,
                            **kwargs) -> bool:
         """
-        Send a message to a Discord target.
+        Send a message to a Discord target with full attachment support.
         
         'to' formats:
           - "user:<user_id>" — Send DM to a user
           - "channel:<channel_id>" — Send to a Discord channel
+        
+        Attachments can be:
+          - Local file paths (e.g. "/tmp/output.txt", "/app/image.png")
+          - URLs (e.g. "https://cdn.discordapp.com/...")
+        
+        Long messages (>6000 chars) are automatically uploaded as .txt files.
         """
         if not self._client or self._client.is_closed():
             logger.error("Discord client not connected")
@@ -346,6 +422,9 @@ class DiscordChannelAdapter(ChannelAdapter):
         await self._ready_event.wait()
         
         try:
+            # Handle bare numeric IDs — default to DM (user:)
+            if ":" not in str(to):
+                to = f"user:{to}"
             target_type, target_id = to.split(":", 1)
             target_id = int(target_id)
         except (ValueError, AttributeError):
@@ -353,14 +432,43 @@ class DiscordChannelAdapter(ChannelAdapter):
             return False
         
         try:
-            # Truncate long messages (Discord limit: 2000 chars)
+            # Build discord.File objects from explicit attachments
+            explicit_paths = set(attachments or [])
+            discord_files = await self._prepare_attachments(attachments or [])
+            
+            # Auto-detect file paths in content (skip already-attached ones)
+            auto_attachments = [
+                p for p in self._extract_file_paths(content)
+                if p not in explicit_paths
+            ]
+            if auto_attachments:
+                auto_files = await self._prepare_attachments(auto_attachments)
+                discord_files.extend(auto_files)
+            
+            # For very long messages, upload as a text file instead of
+            # splitting into many small chunks (cleaner UX)
+            if len(content) > 6000:
+                import io
+                text_file = discord.File(
+                    io.BytesIO(content.encode("utf-8")),
+                    filename="response.txt",
+                    description="Full response (too long for Discord)"
+                )
+                discord_files.insert(0, text_file)
+                # Truncate the visible message to a preview
+                preview = content[:1900] + "\n\n📄 *Full response attached as `response.txt`*"
+                content = preview
+            
+            # Split message into chunks
             chunks = self._split_message(content, max_length=2000)
             
             if target_type == "user":
                 user = await self._client.fetch_user(target_id)
                 dm_channel = await user.create_dm()
-                for chunk in chunks:
-                    await dm_channel.send(chunk)
+                for i, chunk in enumerate(chunks):
+                    # Attach files only on the first chunk
+                    files = discord_files if i == 0 else []
+                    await dm_channel.send(chunk, files=files)
                     
             elif target_type == "channel":
                 channel = self._client.get_channel(target_id)
@@ -369,21 +477,21 @@ class DiscordChannelAdapter(ChannelAdapter):
                 
                 # Forum channel: auto-create thread
                 if isinstance(channel, discord.ForumChannel):
-                    # Use first line as title, rest as content
-                    first_line = chunks[0].split("\n", 1)[0][:100] or "Agent Zero"
+                    first_line = chunks[0].split("\n", 1)[0][:100] or "Skynet"
                     full_content = "\n".join(chunks)
                     thread = await channel.create_thread(
                         name=first_line,
                         content=full_content[:2000],
+                        files=discord_files,
                     )
-                    # Send remaining chunks if content was split
                     if len(full_content) > 2000:
                         remaining = full_content[2000:]
                         for sub_chunk in self._split_message(remaining):
                             await thread.thread.send(sub_chunk)
                 else:
-                    for chunk in chunks:
-                        await channel.send(chunk)
+                    for i, chunk in enumerate(chunks):
+                        files = discord_files if i == 0 else []
+                        await channel.send(chunk, files=files)
                     
             else:
                 logger.error(f"Unknown target type: {target_type}")
@@ -400,6 +508,102 @@ class DiscordChannelAdapter(ChannelAdapter):
         except Exception as e:
             logger.error(f"Failed to send Discord message: {e}")
             return False
+    
+    async def _prepare_attachments(self, attachments: List[str]) -> list:
+        """
+        Convert attachment paths/URLs to discord.File objects.
+        
+        Handles:
+          - Local file paths → read from disk
+          - HTTP(S) URLs → download via aiohttp
+          - Skips files >25MB (Discord limit)
+        """
+        import os
+        import io
+        
+        files = []
+        for att in attachments:
+            try:
+                if att.startswith(("http://", "https://")):
+                    # Download from URL
+                    import aiohttp
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(att, timeout=aiohttp.ClientTimeout(total=30)) as resp:
+                            if resp.status != 200:
+                                logger.warning(f"Failed to download attachment {att}: HTTP {resp.status}")
+                                continue
+                            data = await resp.read()
+                            if len(data) > 25 * 1024 * 1024:  # 25MB Discord limit
+                                logger.warning(f"Attachment too large (>25MB): {att}")
+                                continue
+                            # Extract filename from URL
+                            filename = att.split("/")[-1].split("?")[0] or "attachment"
+                            files.append(discord.File(io.BytesIO(data), filename=filename))
+                else:
+                    # Local file path
+                    if not os.path.exists(att):
+                        logger.warning(f"Attachment file not found: {att}")
+                        continue
+                    file_size = os.path.getsize(att)
+                    if file_size > 25 * 1024 * 1024:
+                        logger.warning(f"Attachment too large (>25MB): {att}")
+                        continue
+                    filename = os.path.basename(att)
+                    files.append(discord.File(att, filename=filename))
+            except Exception as e:
+                logger.warning(f"Failed to prepare attachment {att}: {e}")
+        return files
+    
+    def _extract_file_paths(self, content: str) -> List[str]:
+        """
+        Auto-detect file paths in response text and return existing ones
+        that look like they should be attached (images, files, etc).
+        
+        This handles the common case where the LLM generates a file
+        (e.g. an image) and reports the path in its response text,
+        but nobody explicitly passes it as an attachment.
+        """
+        import re
+        import os
+        
+        # File extensions we should auto-attach
+        ATTACHABLE_EXTENSIONS = {
+            # Images
+            '.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg',
+            # Documents
+            '.pdf', '.txt', '.csv', '.json', '.xml', '.html',
+            # Audio/Video
+            '.mp3', '.wav', '.mp4', '.webm', '.ogg',
+            # Archives
+            '.zip', '.tar', '.gz',
+            # Code outputs
+            '.py', '.js', '.ts', '.md',
+        }
+        
+        # Patterns to find file paths in text
+        # Match: /absolute/path/to/file.ext or `backtick-wrapped paths`
+        path_patterns = [
+            r'`(/[^\s`]+\.[a-zA-Z0-9]{2,5})`',           # `backtick-quoted` paths
+            r'(?:^|[\s:])(/[^\s\'"`,\)]+\.[a-zA-Z0-9]{2,5})',  # bare absolute paths
+            r'\*\*Saved to:\*\*\s*`?(/[^\s`]+)`?',        # **Saved to:** /path
+            r'saved (?:to|at|in)[:\s]+`?(/[^\s`]+)`?',    # saved to: /path
+            r'output[:\s]+`?(/[^\s`]+\.[a-zA-Z0-9]{2,5})`?',  # output: /path
+            r'generated[:\s]+`?(/[^\s`]+\.[a-zA-Z0-9]{2,5})`?',  # generated: /path
+        ]
+        
+        found_paths = set()
+        for pattern in path_patterns:
+            for match in re.finditer(pattern, content, re.IGNORECASE | re.MULTILINE):
+                path = match.group(1)
+                # Verify: must exist, have attachable extension, be under 25MB
+                ext = os.path.splitext(path)[1].lower()
+                if ext in ATTACHABLE_EXTENSIONS and os.path.isfile(path):
+                    file_size = os.path.getsize(path)
+                    if file_size <= 25 * 1024 * 1024:
+                        found_paths.add(path)
+                        logger.info(f"Auto-detected attachable file: {path}")
+        
+        return list(found_paths)
     
     async def send_confirmation(self, channel, prompt: str) -> Optional[bool]:
         """
